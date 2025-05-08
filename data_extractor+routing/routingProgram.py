@@ -11,7 +11,7 @@ import webbrowser
 from datetime import datetime
 
 # input principali da parte dell'utente
-ORS_API_KEY = "5b3ce3597851110001cf62487c5742934c8b4389bdf3c74d2a29107c"  # Sostituisci con la tua chiave reale
+ORS_API_KEY = open("API_KEY.txt", 'r').read().strip()  # Sostituisci con la tua chiave reale
 COORDINATE_INIZIO = [9.17988, 45.47006]  # [lon, lat] Milano
 COORDINATE_FINE = [9.18956, 45.46424]    # [lon, lat] Milano
 
@@ -79,7 +79,7 @@ class Barriera(ElementoOSM):
         
         self.immagine_url = self.trova_immagine()
     
-    def _determina_tipo(self):
+    def _determina_tipo(self): # TODO: fare l'enum delle barriere e dei facilitatori
         """Determina il tipo specifico di barriera in base ai tag"""
         # Highway
         if self.tags.get('highway') == 'crossing':
@@ -97,6 +97,7 @@ class Barriera(ElementoOSM):
             return "marciapiede_stretto"
         # Default
         return "barriera_generica"
+        # molti altri tipi possibili ...
     
     def è_rilevante_per(self, tipo_disabilità):
         """Determina se questa barriera è rilevante per il tipo di disabilità specificato"""
@@ -106,6 +107,14 @@ class Barriera(ElementoOSM):
                 # Attraversamenti senza segnale acustico
                 return not (self.tags.get('traffic_signals:sound') == 'yes')
             
+            # Scale e gradini
+            if self.tipo == "scalino":
+                return False
+            
+            # Kerb
+            if self.tipo == "kerb":
+                return False
+            
             # Ostacoli non percepibili col bastone
             if 'tactile_paving' in self.tags and self.tags['tactile_paving'] == 'no':
                 return True
@@ -114,8 +123,9 @@ class Barriera(ElementoOSM):
             if self.tipo == "superficie_difficile":
                 return True
                 
-            # Altri casi specifici per non vedenti
-            return self.tipo in ["ostacolo_aereo", "segnaletica_non_tattile", "lavori_in_corso"]
+            # Altrimenti
+            #return self.tipo in [...]
+            return False
         
         elif tipo_disabilità == disabilità.WHEELCHAIR:
             # Per utenti in sedia a rotelle
@@ -154,6 +164,7 @@ class Barriera(ElementoOSM):
                 except ValueError:
                     pass
             
+            #return self.tipo in [...]
             return False
         
         return False
@@ -180,7 +191,7 @@ class Facilitatore(ElementoOSM):
         
         self.immagine_url = self.trova_immagine()
     
-    def _determina_tipo(self):
+    def _determina_tipo(self): # TODO: fare enum
         """Determina il tipo specifico di facilitatore in base ai tag"""
         # Attraversamento accessibile
         if self.tags.get('highway') == 'crossing' and self.tags.get('traffic_signals:sound') == 'yes':
@@ -223,7 +234,8 @@ class Facilitatore(ElementoOSM):
                 return True
             
             # Altri elementi utili per non vedenti
-            return self.tipo in ["semaforo_sonoro", "mappe_tattili"]
+            #return self.tipo in [...]
+            return False
         
         elif tipo_disabilità == disabilità.WHEELCHAIR:
             # Per utenti in sedia a rotelle
@@ -239,7 +251,7 @@ class Facilitatore(ElementoOSM):
                 return True
             
             # Panchine (per riposarsi)
-            if self.tipo == "panchina" and self.tags.get('backrest') == 'yes':
+            if self.tipo == "panchina":
                 return True
             
             # Fontanelle accessibili
@@ -247,7 +259,8 @@ class Facilitatore(ElementoOSM):
                 return True
             
             # Altri elementi utili
-            return self.tipo in ["rampa", "corrimano", "parcheggio_disabili"]
+            #return self.tipo in ["rampa", "corrimano", "parcheggio_disabili"]
+            return False
         
         return False
     
@@ -801,13 +814,11 @@ def main():
     # Usa le coordinate predefinite
     inizio = COORDINATE_INIZIO
     fine = COORDINATE_FINE
-    
-    print(f"Usando percorso da {inizio} a {fine}...")
 
     # ------------ caricamento dati ------------
     print("Caricamento dati da file JSON...")
-    elementi_osm = caricaElementiDaJSON(directory_risultati)
-    print(f"Caricati {len(elementi_osm)} elementi da OSM")
+    elementi_osm = caricaElementiDaJSON(directory_risultati) # qua carico tutti gli elementi 
+    print(f"Caricati {len(elementi_osm)} elementi da OSM")   # a prescindere dalla vicinanza al percorso
 
     # ------------ calcolo iniziale del percorso ------------
     print(f"Calcolo percorso pedonale da {inizio} a {fine}...")
@@ -831,8 +842,8 @@ def main():
     # Ciclo di ottimizzazione del percorso
     utente_soddisfatto = False
     iterazione = 1
-    
-    while not utente_soddisfatto:
+    while not utente_soddisfatto: # finche l'utente non è soddisfatto
+        
         print(f"\n===== ITERAZIONE {iterazione} =====")
         
         # Trova barriere e facilitatori sul percorso attuale
