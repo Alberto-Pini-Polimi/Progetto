@@ -12,11 +12,14 @@ from datetime import datetime
 
 # input principali da parte dell'utente
 ORS_API_KEY = open("API_KEY.txt", 'r').read().strip()  # Sostituisci con la tua chiave reale
-COORDINATE_INIZIO = [9.17988, 45.47006]  # [lon, lat] Milano
-COORDINATE_FINE = [9.18956, 45.46424]    # [lon, lat] Milano
+COORDINATE_INIZIO = [9.17988, 45.47006]  # [lon, lat] castello sforzesco
+#COORDINATE_FINE = [9.18956, 45.46424]    # [lon, lat] duomo
+#COORDINATE_FINE = [9.203530, 45.485146] # centrale
+COORDINATE_FINE = [9.226897, 45.478111] # piazza leo
 
 # definisco un'area di distanza attorno ai percorsi
-BUFFER_DISTANZA_METRI = 20
+BUFFER_FACILITATORI_IN_METRI = 30
+BUFFER_BARRIERE_IN_METRI = 5
 
 # Definisci i sistemi di coordinate e le funzioni per la trasformazione tra i sistemi
 wgs84 = 'EPSG:4326' # Sistema di coordinate geografiche (lat/lon)
@@ -267,6 +270,24 @@ class Facilitatore(ElementoOSM):
     def __str__(self):
         return f"Facilitatore {self.tipo} (ID: {self.id})"
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class Percorso():
     
     def __init__(self, encoded_polyline):
@@ -287,16 +308,26 @@ class Percorso():
         self.facilitatori_da_includere = []
         
         # Crea il buffer di default
-        self.creaBufferAttornoAlPercorso(BUFFER_DISTANZA_METRI)
+        self.creaBufferBarriere()
+        self.creaBufferFacilitatori()
 
-    def creaBufferAttornoAlPercorso(self, grandezza_buffer):
-        # Crea un buffer in metri (es. 10 metri)
-        self.area_limitrofa_al_percorso_utm = self.percorso_utm.buffer(grandezza_buffer)
+    def creaBufferFacilitatori(self):
+        """Crea un buffer attorno al percorso in UTM per i facilitatori"""
+        self.bufferFacilitatori_utm = self.percorso_utm.buffer(BUFFER_FACILITATORI_IN_METRI)
+        # Riproietta il buffer in WGS84 per la visualizzazione e il controllo dei facilitatori
+        area_limitrofa_al_percorso_geo_coords = [project_to_wgs(x, y) for x, y in self.bufferFacilitatori_utm.exterior.coords]
+        # Crea un poligono per i facilitatori
+        self.bufferFacilitatori_geo = Polygon(area_limitrofa_al_percorso_geo_coords)
+
+    def creaBufferBarriere(self):
+        """Crea un buffer attorno al percorso in UTM per le barriere"""
+        self.bufferBarriere_utm = self.percorso_utm.buffer(BUFFER_BARRIERE_IN_METRI)
         # Riproietta il buffer in WGS84 per la visualizzazione e il controllo delle barriere
-        area_limitrofa_al_percorso_geo_coords = [project_to_wgs(x, y) for x, y in self.area_limitrofa_al_percorso_utm.exterior.coords]
-        self.area_limitrofa_al_percorso_geo = Polygon(area_limitrofa_al_percorso_geo_coords)
+        area_limitrofa_al_percorso_geo_coords = [project_to_wgs(x, y) for x, y in self.bufferBarriere_utm.exterior.coords]
+        # Crea un poligono per le barriere
+        self.bufferBarriere_geo = Polygon(area_limitrofa_al_percorso_geo_coords)
 
-    def isNelBuffer(self, punto):
+    def isNelBuffer(self, punto, tipo_buffer):
         """Verifica se un punto è all'interno del buffer"""
         if isinstance(punto, tuple) or isinstance(punto, list):
             punto_geo = Point(punto)  # lon, lat
@@ -307,28 +338,50 @@ class Percorso():
         punto_utm = project_to_utm(punto_geo.x, punto_geo.y)
         punto_utm_shapely = Point(punto_utm)
         # Verifica il contenimento nel buffer UTM e ritorna vero o falso
-        return self.area_limitrofa_al_percorso_utm.contains(punto_utm_shapely)
+        if tipo_buffer == "barriere":
+            return self.bufferBarriere_utm.contains(punto_utm_shapely)
+        elif tipo_buffer == "facilitatori":
+            return self.bufferFacilitatori_utm.contains(punto_utm_shapely)
+        else:
+            raise ValueError("Tipo di buffer non valido. Deve essere 'barriere' o 'facilitatori'.")
     
-    def isElementoNelBuffer(self, elemento):
-        """Verifica se un elemento (Barriera o Facilitatore) è nel buffer"""
-        # Se l'elemento ha un poligono, controlla se interseca il buffer
+    def elementoIntersecaIlRispettivoBuffer(self, elemento):
+        """Verifica se un elemento (Barriera o Facilitatore) è nel rispettivo buffer"""
+
+        tipo_buffer = "facilitatori" if isinstance(elemento, Facilitatore) else "barriere"
+        # Se l'elemento è un poligono, controlla se interseca il buffer
         if isinstance(elemento.geometry, Polygon):
             # Converti le coordinate in UTM
             coords_utm = [project_to_utm(x, y) for x, y in elemento.geometry.exterior.coords]
             poligono_utm = Polygon(coords_utm)
             # Verifica se interseca il buffer
-            return self.area_limitrofa_al_percorso_utm.intersects(poligono_utm)
+            if tipo_buffer == "barriere":
+                return self.bufferBarriere_utm.intersects(poligono_utm)
+            elif tipo_buffer == "facilitatori":
+                return self.bufferFacilitatori_utm.intersects(poligono_utm)
+            else:
+                raise ValueError("tipo buffer incorretto")
+            
+        # se invece è un multipoligono
         elif isinstance(elemento.geometry, MultiPolygon):
             # Per ogni poligono nel multipoligono, verifica intersezione
             for poligono in elemento.geometry.geoms:
                 coords_utm = [project_to_utm(x, y) for x, y in poligono.exterior.coords]
                 poligono_utm = Polygon(coords_utm)
-                if self.area_limitrofa_al_percorso_utm.intersects(poligono_utm):
-                    return True
+                # Verifica se interseca il buffer
+                if tipo_buffer == "barriere":
+                    if self.bufferBarriere_utm.intersects(poligono_utm):
+                        return True
+                elif tipo_buffer == "facilitatori":
+                    if self.bufferFacilitatori_utm.intersects(poligono_utm):
+                        return True
+                else:
+                    raise ValueError("tipo buffer incorretto")
+            
             return False
         else:
-            # Altrimenti, usa il centroide
-            return self.isNelBuffer(elemento.trovaCoordinateCentroide())
+            # Altrimenti, l'elemento non è un poligono
+            return self.isNelBuffer(elemento.trovaCoordinateCentroide(), tipo_buffer)
     
     def trovaElementiSulPercorso(self, disabilitàUtente, elementi_caricati):
         """
@@ -339,7 +392,7 @@ class Percorso():
         
         for elemento in elementi_caricati:
             # Verifica se l'elemento è nel buffer
-            if self.isElementoNelBuffer(elemento):
+            if self.elementoIntersecaIlRispettivoBuffer(elemento):
                 # Verifica se è rilevante per la disabilità dell'utente
                 if elemento.è_rilevante_per(disabilitàUtente):
                     if isinstance(elemento, Barriera):
@@ -349,34 +402,34 @@ class Percorso():
         
         return self.barriereTrovate, self.facilitatoriTrovati
     
-    def aggiungiBarrieraDaEvitare(self, barriera):
-        self.barriere_da_evitare.append(barriera)
+    # def aggiungiBarrieraDaEvitare(self, barriera):
+    #     self.barriere_da_evitare.append(barriera)
     
-    def aggiungiSBFacilitatorePreferito(self, facilitatore):
-        self.facilitatori_da_includere.append(facilitatore)
+    # def aggiungiSBFacilitatorePreferito(self, facilitatore):
+    #     self.facilitatori_da_includere.append(facilitatore)
     
-    def creaPoligoniBarriere(self):
-        """Crea poligoni per le barriere da evitare nel percorso"""
-        poligoni = []
+    # def creaPoligoniBarriere(self):
+    #     """Crea poligoni per le barriere da evitare nel percorso"""
+    #     poligoni = []
         
-        for barriera in self.barriere_da_evitare:
-            centroide = barriera.trovaCoordinateCentroide()
-            # Proietta il punto in UTM
-            punto_utm = project_to_utm(centroide[0], centroide[1])
-            # Crea un buffer in metri intorno alla barriera (es. 20 metri) e riproiettalo in WGS84
-            cerchio_utm = Point(punto_utm).buffer(20)
-            cerchio_coords = [project_to_wgs(x, y) for x, y in cerchio_utm.exterior.coords]
-            poligoni.append(Polygon(cerchio_coords))
+    #     for barriera in self.barriere_da_evitare:
+    #         centroide = barriera.trovaCoordinateCentroide()
+    #         # Proietta il punto in UTM
+    #         punto_utm = project_to_utm(centroide[0], centroide[1])
+    #         # Crea un buffer in metri intorno alla barriera (es. 20 metri) e riproiettalo in WGS84
+    #         cerchio_utm = Point(punto_utm).buffer(0.0002)
+    #         cerchio_coords = [project_to_wgs(x, y) for x, y in cerchio_utm.exterior.coords]
+    #         poligoni.append(Polygon(cerchio_coords))
         
-        return poligoni
+    #     return poligoni
     
-    def ottieniFacilitatoriCoordinates(self):
-        """Restituisce le coordinate dei facilitatori da includere come waypoints"""
-        waypoints = []
-        for facilitatore in self.facilitatori_da_includere:
-            centroide = facilitatore.trovaCoordinateCentroide()
-            waypoints.append((centroide[1], centroide[0]))  # Inverte in [lat, lon] per ORS
-        return waypoints
+    # def ottieniFacilitatoriCoordinates(self):
+    #     """Restituisce le coordinate dei facilitatori da includere come waypoints"""
+    #     waypoints = []
+    #     for facilitatore in self.facilitatori_da_includere:
+    #         centroide = facilitatore.trovaCoordinateCentroide()
+    #         waypoints.append((centroide[1], centroide[0]))  # Inverte in [lat, lon] per ORS
+    #     return waypoints
 
 
 
@@ -392,7 +445,7 @@ class Percorso():
 
 
 
-
+# parte grafica
 
 class MappaFolium:
     """Classe per la gestione della visualizzazione su mappa Folium"""
@@ -499,10 +552,16 @@ def visualizzaPercorsoSuMappa(percorso, barriere, facilitatori, selezionati_barr
     # Aggiungi il percorso
     mappa.aggiungiPolyline(percorso.coordinate_della_polyline)
     
-    # Aggiungi il buffer
+    # Aggiungi il buffer delle barriere
     mappa.aggiungiPoligono(
-        [(y, x) for x, y in percorso.area_limitrofa_al_percorso_geo.exterior.coords],
+        [(y, x) for x, y in percorso.bufferBarriere_geo.exterior.coords],
         tooltip='Area di ricerca barriere'
+    )
+
+    # Aggiungi il buffer dei facilitatori
+    mappa.aggiungiPoligono(
+        [(y, x) for x, y in percorso.bufferFacilitatori_geo.exterior.coords],
+        tooltip='Area di ricerca facilitatori'
     )
     
     # Aggiungi le barriere
@@ -799,6 +858,42 @@ def mostraBarriereEFacilitatori(barriere, facilitatori):
     
     return barriere_da_evitare, facilitatori_da_includere
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def main():
     # ------------ Impostazioni ------------
     headers = {
@@ -840,6 +935,13 @@ def main():
     id_barriere_selezionate = set()
     id_facilitatori_selezionati = set()
     
+
+
+
+
+
+
+
     # Ciclo di ottimizzazione del percorso
     utente_soddisfatto = False
     iterazione = 1
@@ -859,16 +961,23 @@ def main():
         # Aggiungi il percorso
         mappa.aggiungiPolyline(percorso.coordinate_della_polyline)
         
-        # Aggiungi il buffer
+        # Aggiungi il buffer barriere
         mappa.aggiungiPoligono(
-            [(y, x) for x, y in percorso.area_limitrofa_al_percorso_geo.exterior.coords],
-            tooltip='Area di ricerca barriere'
+            [(y, x) for x, y in percorso.bufferBarriere_geo.exterior.coords],
+            tooltip='Area di ricerca barriere',
+            colore='orange'
         )
-        
+        # Aggiungi il buffer facilitatori
+        mappa.aggiungiPoligono(
+            [(y, x) for x, y in percorso.bufferFacilitatori_geo.exterior.coords],
+            tooltip='Area di ricerca facilitatori',
+            colore='lightgreen'
+        )
+
         # Aggiungi le barriere
         for barriera in barriere:
-            evidenziata = barriera.id in id_barriere_selezionate
-            mappa.aggiungiElemento(barriera, evidenzia=evidenziata)
+            evidenziato = barriera.id in id_barriere_selezionate
+            mappa.aggiungiElemento(barriera, evidenzia=evidenziato)
         
         # Aggiungi i facilitatori
         for facilitatore in facilitatori:
@@ -923,7 +1032,7 @@ def main():
             # Proietta il punto in UTM
             punto_utm = project_to_utm(centroide[0], centroide[1])
             # Crea un buffer in metri intorno alla barriera (es. 20 metri) e riproiettalo in WGS84
-            cerchio_utm = Point(punto_utm).buffer(20)
+            cerchio_utm = Point(punto_utm).buffer(BUFFER_FACILITATORI_IN_METRI)
             cerchio_coords = [project_to_wgs(x, y) for x, y in cerchio_utm.exterior.coords]
             aree_da_evitare.append(Polygon(cerchio_coords))
         
@@ -960,10 +1069,17 @@ def main():
     # Aggiungi il percorso
     mappa_finale.aggiungiPolyline(percorso.coordinate_della_polyline)
     
-    # Aggiungi il buffer
-    mappa_finale.aggiungiPoligono(
-        [(y, x) for x, y in percorso.area_limitrofa_al_percorso_geo.exterior.coords],
-        tooltip='Area di ricerca barriere'
+    # Aggiungi il buffer barriere
+    mappa.aggiungiPoligono(
+        [(y, x) for x, y in percorso.bufferBarriere_geo.exterior.coords],
+        tooltip='Area di ricerca barriere',
+        colore='orange'
+    )
+    # Aggiungi il buffer facilitatori
+    mappa.aggiungiPoligono(
+        [(y, x) for x, y in percorso.bufferFacilitatori_geo.exterior.coords],
+        tooltip='Area di ricerca facilitatori',
+        colore='lightgreen'
     )
     
     # Aggiungi le barriere
