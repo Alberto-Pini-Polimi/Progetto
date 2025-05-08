@@ -1,0 +1,28 @@
+[out:json];
+
+area["boundary"="administrative"]["admin_level"="8"]["name"="Milano"] -> .areaDiRicerca;
+
+// trovo tutti i marciapiedi (footways)
+way(area.areaDiRicerca)["highway"="footway"] -> .marciapiedi;
+
+// tra quei marciapiedi trovati prendo quelli con ...
+way.marciapiedi["surface" ~ "gravel|cobblestone|unpaved|dirt|grass|sand|woodchips|compacted"] -> .marciapiediConPessimeSuperfici;
+way.marciapiedi["width"](if:t["width"] && number(t["width"]) < 0.6) -> .marciapiediStretti;
+way.marciapiedi["smoothness"]["smoothness" ~ "bad|very_bad|horrible|impassable"] -> .marciapiediScoscesi;
+way.marciapiedi["wheelchair"]["wheelchair" != "yes"] -> .marciapiediEsplicitamenteInadatto;
+
+( // unisco assieme tutti i marciapiedi inadatti
+	.marciapiediConPessimeSuperfici;
+	.marciapiediStretti;
+	.marciapiediScoscesi;
+	.marciapiediEsplicitamenteInadatto;
+) -> .marciapiediInadatti;
+
+// se però, anche se uno dei precedenti requisiti è violato, c'è il tag wheelchair=yes
+// allora lo escludo dall'insieme di marciapiedi inadatti.
+// per farlo basta sottrarre i marciapiedi esplicitamente adatti:
+(
+ 	way.marciapiediInadatti; - way.marciapiediInadatti["wheelchair"="yes"];
+) -> .marciapiediInadatti; // da 957 passano a 954
+
+.marciapiediInadatti out center;

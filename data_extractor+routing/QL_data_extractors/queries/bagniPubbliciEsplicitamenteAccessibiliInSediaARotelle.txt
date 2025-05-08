@@ -1,0 +1,11 @@
+[out:json];
+
+relation(44915) -> .milano;
+.milano map_to_area -> .areaMilano;
+
+(
+  nwr(area.areaMilano)["amenity"="toilets"]["wheelchair" ~ "yes|designated"];
+  nwr(around.milano:1500)["amenity"="toilets"]["wheelchair" ~ "yes|designated"];
+) -> .bagniPubbliciPerSedieARotelle;
+
+.bagniPubbliciPerSedieARotelle out center;

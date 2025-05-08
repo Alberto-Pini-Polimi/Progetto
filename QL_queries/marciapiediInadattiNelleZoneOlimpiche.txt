@@ -1,0 +1,33 @@
+[out:json];
+
+// trovo l'area del comune di milano
+area["boundary"="administrative"]["name"="Milano"] -> .milano;
+
+// cerco i 4 punti d'interesse col loro nome ufficiale mappandoli in una way col nome olimpico
+way(area.milano)["name"="Stadio Giuseppe Meazza"] -> .milanoSanSiroOlympicStadium;
+way(area.milano)["name"="Fieramilano"] -> .milanoIcePark;
+way(area.milano)["name"="Unipol Forum"] -> .milanoIceSkatingArena;
+way(area.milano)["name"="Santa Giulia"] -> .milanoSantaGiuliaIceHockeyArena;
+
+( // unisco tutte e 4 le way
+  .milanoSanSiroOlympicStadium;
+  .milanoIcePark;
+  .milanoIceSkatingArena;
+  .milanoSantaGiuliaIceHockeyArena;
+) -> .zoneOlimpicheDiMilano;
+
+// Trova tutti i marciapiedi entro 500 metri dalle varie zone olimpiche
+way(around.zoneOlimpicheDiMilano:500)["highway"="footway"] -> .marciapiedi;
+
+( // cerco tutti i marciapiedi inadatti
+  way.marciapiedi["surface"~"gravel|cobblestone|unpaved|dirt|grass|sand|woodchips|compacted"];
+  way.marciapiedi["width"](if: number(t["width"]) < 0.6);
+  way.marciapiedi["smoothness"]["smoothness" ~ "bad|very_bad|horrible|impassable"];
+  way.marciapiedi["wheelchair"]["wheelchair" != "yes"];
+) -> .marciapiediInadatti;
+
+( // escludo i marciapiedi esplicitamente adatti ("wheelchair"="yes")
+  way.marciapiediInadatti; - way.marciapiediInadatti["wheelchair"="yes"];
+) -> .marciapiediInadattiFinali;
+
+.marciapiediInadattiFinali out center;

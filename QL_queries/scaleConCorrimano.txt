@@ -1,0 +1,20 @@
+[out:json];
+
+area["boundary"="administrative"]["admin_level"="8"]["name"="Milano"] -> .areaDiRicerca;
+
+nwr(area.areaDiRicerca)
+  ["highway"="steps"]
+  (if:
+    (is_tag("access") && t["access"]!="private" && t["access"]!="no") || 
+    !is_tag("access") // assumo accesso pubblico se il tag non è presente 
+  )
+  (if:
+    // stavolta non assumo la presenza di un corrimano se il tag non esiste
+    is_tag("handrail") && t["handrail"]!="no" 
+    // il !="no" al posto che =="yes" è dovuto dalla possibile presenza del
+    // valore "both": questo indicala presenza di handrail dall'inizio alla
+    // fine della scala (cioè su "both" i nodi che compongono la way)
+  )  	
+-> .scaleConCorrimano;
+
+.scaleConCorrimano out center;

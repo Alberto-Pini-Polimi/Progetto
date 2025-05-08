@@ -1,0 +1,36 @@
+
+[out:json];
+
+// trovo l'area del comune di milano
+area["boundary"="administrative"]["name"="Milano"] -> .milano;
+
+// cerco i 4 punti d'interesse col loro nome ufficiale mappandoli in una way col nome olimpico
+way(area.milano)["name"="Stadio Giuseppe Meazza"] -> .milanoSanSiroOlympicStadium;
+way(area.milano)["name"="Fieramilano"] -> .milanoIcePark;
+way(area.milano)["name"="Unipol Forum"] -> .milanoIceSkatingArena;
+way(area.milano)["name"="Santa Giulia"] -> .milanoSantaGiuliaIceHockeyArena;
+
+( // unisco tutte e 4 le way
+  .milanoSanSiroOlympicStadium;
+  .milanoIcePark;
+  .milanoIceSkatingArena;
+  .milanoSantaGiuliaIceHockeyArena;
+) -> .zoneOlimpicheDiMilano;
+
+
+nwr(around.zoneOlimpicheDiMilano:500)
+  ["highway"="steps"]
+  (if:
+   	(is_tag("access") && t["access"]!="private" && t["access"]!="no") || 
+   	!is_tag("access") // assumo accesso pubblico se il tag non è presente 
+  )
+  (if:
+   	// stavolta non assumo la presenza di un corrimano se il tag non esiste
+  	is_tag("handrail") && t["handrail"]!="no" 
+  	// il !="no" al posto che =="yes" è dovuto dalla possibile presenza del
+  	// valore "both": questo indicala presenza di handrail dall'inizio alla
+  	// fine della scala (cioè su "both" i nodi che compongono la way)
+  )  	
+-> .scaleConCorrimano;
+
+.scaleConCorrimano out center;
