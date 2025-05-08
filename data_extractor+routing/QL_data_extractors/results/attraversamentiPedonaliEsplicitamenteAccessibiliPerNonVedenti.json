@@ -2,8 +2,8 @@
   "version": 0.6,
   "generator": "Overpass API 0.7.62.5 1bd436f1",
   "osm3s": {
-    "timestamp_osm_base": "2025-04-19T08:57:54Z",
-    "timestamp_areas_base": "2025-02-06T02:17:44Z",
+    "timestamp_osm_base": "2025-05-08T07:14:45Z",
+    "timestamp_areas_base": "2024-12-31T00:49:33Z",
     "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
   },
   "elements": [
@@ -678,6 +678,23 @@
         "tactile_paving": "no",
         "traffic_signals:sound": "yes",
         "traffic_signals:vibration": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 913244466,
+      "lat": 45.4923528,
+      "lon": 9.194264,
+      "tags": {
+        "button_operated": "no",
+        "check_date": "2025-05-01",
+        "check_date:traffic_signals:sound": "2025-05-01",
+        "crossing": "traffic_signals",
+        "highway": "crossing",
+        "mapillary": "2959630697654499",
+        "tactile_paving": "no",
+        "traffic_signals:sound": "yes",
+        "wheelchair": "yes"
       }
     },
     {
@@ -2485,6 +2502,19 @@
     },
     {
       "type": "node",
+      "id": 1432465679,
+      "lat": 45.4909745,
+      "lon": 9.1989281,
+      "tags": {
+        "button_operated": "no",
+        "crossing": "traffic_signals",
+        "highway": "crossing",
+        "tactile_paving": "no",
+        "traffic_signals:sound": "yes"
+      }
+    },
+    {
+      "type": "node",
       "id": 1449050692,
       "lat": 45.4691134,
       "lon": 9.1882605,
@@ -2982,6 +3012,18 @@
     },
     {
       "type": "node",
+      "id": 1485794963,
+      "lat": 45.4957064,
+      "lon": 9.1814084,
+      "tags": {
+        "crossing": "traffic_signals",
+        "highway": "crossing",
+        "tactile_paving": "no",
+        "traffic_signals:sound": "yes"
+      }
+    },
+    {
+      "type": "node",
       "id": 1485795114,
       "lat": 45.4968817,
       "lon": 9.1792659,
@@ -3027,6 +3069,39 @@
       "id": 1485833831,
       "lat": 45.4971215,
       "lon": 9.1819833,
+      "tags": {
+        "button_operated": "no",
+        "crossing": "traffic_signals",
+        "highway": "crossing",
+        "tactile_paving": "no",
+        "traffic_signals:sound": "yes",
+        "traffic_signals:vibration": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1485848038,
+      "lat": 45.4950113,
+      "lon": 9.1832924,
+      "tags": {
+        "button_operated": "no",
+        "check_date": "2025-04-30",
+        "check_date:traffic_signals:sound": "2025-04-30",
+        "check_date:traffic_signals:vibration": "2025-04-30",
+        "crossing": "traffic_signals",
+        "highway": "crossing",
+        "mapillary": "296181728888613",
+        "tactile_paving": "no",
+        "traffic_signals:sound": "yes",
+        "traffic_signals:vibration": "no",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1485848051,
+      "lat": 45.4951794,
+      "lon": 9.1833713,
       "tags": {
         "button_operated": "no",
         "crossing": "traffic_signals",
@@ -4829,6 +4904,7 @@
       "tags": {
         "button_operated": "no",
         "crossing": "traffic_signals",
+        "crossing:signals": "yes",
         "highway": "crossing",
         "mapillary": "813797622848901",
         "survey:date": "2019-06-05",
@@ -4863,6 +4939,7 @@
       "tags": {
         "button_operated": "no",
         "crossing": "traffic_signals",
+        "crossing:signals": "yes",
         "highway": "crossing",
         "mapillary": "3940296936091698",
         "survey:date": "2018-11-30",
@@ -8925,6 +9002,19 @@
     },
     {
       "type": "node",
+      "id": 2533487038,
+      "lat": 45.4818075,
+      "lon": 9.2211283,
+      "tags": {
+        "button_operated": "no",
+        "crossing": "traffic_signals",
+        "highway": "crossing",
+        "tactile_paving": "no",
+        "traffic_signals:sound": "yes"
+      }
+    },
+    {
+      "type": "node",
       "id": 2533487044,
       "lat": 45.4816063,
       "lon": 9.221309,
@@ -8950,6 +9040,36 @@
     },
     {
       "type": "node",
+      "id": 2533487050,
+      "lat": 45.4818426,
+      "lon": 9.2212116,
+      "tags": {
+        "button_operated": "no",
+        "crossing": "traffic_signals",
+        "highway": "crossing",
+        "tactile_paving": "no",
+        "traffic_signals:sound": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2533487051,
+      "lat": 45.4817175,
+      "lon": 9.2213121,
+      "tags": {
+        "button_operated": "no",
+        "check_date": "2025-05-06",
+        "check_date:traffic_signals:sound": "2025-05-06",
+        "crossing": "traffic_signals",
+        "highway": "crossing",
+        "mapillary": "281495000284910",
+        "tactile_paving": "no",
+        "traffic_signals:sound": "yes",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
       "id": 2533487053,
       "lat": 45.4814526,
       "lon": 9.2212131,
@@ -8960,6 +9080,19 @@
         "tactile_paving": "no",
         "traffic_signals:sound": "yes",
         "traffic_signals:vibration": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2533496840,
+      "lat": 45.4809202,
+      "lon": 9.2236018,
+      "tags": {
+        "button_operated": "no",
+        "crossing": "traffic_signals",
+        "highway": "crossing",
+        "tactile_paving": "no",
+        "traffic_signals:sound": "yes"
       }
     },
     {
@@ -9350,6 +9483,21 @@
         "traffic_signals:sound": "no",
         "traffic_signals:vibration": "yes",
         "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2542741199,
+      "lat": 45.4734096,
+      "lon": 9.2234709,
+      "tags": {
+        "button_operated": "no",
+        "crossing": "traffic_signals",
+        "crossing:island": "no",
+        "highway": "crossing",
+        "tactile_paving": "no",
+        "traffic_signals:sound": "yes",
+        "traffic_signals:vibration": "no"
       }
     },
     {
@@ -9810,6 +9958,20 @@
         "tactile_paving": "no",
         "traffic_signals:sound": "yes",
         "traffic_signals:vibration": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2559116527,
+      "lat": 45.4933123,
+      "lon": 9.190691,
+      "tags": {
+        "button_operated": "no",
+        "crossing": "traffic_signals",
+        "crossing:island": "no",
+        "highway": "crossing",
+        "tactile_paving": "no",
+        "traffic_signals:sound": "yes"
       }
     },
     {
@@ -13180,14 +13342,17 @@
       "lat": 45.4732478,
       "lon": 9.214746,
       "tags": {
-        "check_date": "2025-04-06",
+        "button_operated": "no",
+        "check_date": "2025-04-27",
         "check_date:traffic_signals:sound": "2025-04-06",
+        "check_date:traffic_signals:vibration": "2025-04-27",
         "crossing": "traffic_signals",
         "crossing:island": "no",
         "highway": "crossing",
         "mapillary": "4273446949334367",
         "tactile_paving": "no",
         "traffic_signals:sound": "yes",
+        "traffic_signals:vibration": "yes",
         "wheelchair": "yes"
       }
     },
@@ -15944,6 +16109,26 @@
         "highway": "crossing",
         "mapillary": "477329213371848",
         "survey:date": "2020-09-08",
+        "tactile_paving": "no",
+        "traffic_signals:sound": "yes",
+        "traffic_signals:vibration": "no",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4080203921,
+      "lat": 45.4943793,
+      "lon": 9.1576518,
+      "tags": {
+        "button_operated": "no",
+        "check_date": "2025-05-01",
+        "check_date:tactile_paving": "2025-05-01",
+        "check_date:traffic_signals:sound": "2025-05-01",
+        "check_date:traffic_signals:vibration": "2025-05-01",
+        "crossing": "traffic_signals",
+        "highway": "crossing",
+        "mapillary": "866270137564316",
         "tactile_paving": "no",
         "traffic_signals:sound": "yes",
         "traffic_signals:vibration": "no",

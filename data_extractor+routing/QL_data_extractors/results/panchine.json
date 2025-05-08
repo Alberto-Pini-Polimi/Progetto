@@ -2,7 +2,7 @@
   "version": 0.6,
   "generator": "Overpass API 0.7.62.5 1bd436f1",
   "osm3s": {
-    "timestamp_osm_base": "2025-04-19T08:57:54Z",
+    "timestamp_osm_base": "2025-05-08T07:14:45Z",
     "timestamp_areas_base": "2025-02-06T02:17:44Z",
     "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
   },
@@ -1065,6 +1065,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "yes",
+        "check_date": "2025-04-26",
         "colour": "green"
       }
     },
@@ -1076,6 +1077,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "yes",
+        "check_date": "2025-04-26",
         "colour": "green"
       }
     },
@@ -13483,17 +13485,6 @@
     },
     {
       "type": "node",
-      "id": 4142389944,
-      "lat": 45.5119326,
-      "lon": 9.1998892,
-      "tags": {
-        "amenity": "bench",
-        "backrest": "yes",
-        "material": "wood"
-      }
-    },
-    {
-      "type": "node",
       "id": 4142390076,
       "lat": 45.5111987,
       "lon": 9.2024052,
@@ -13715,17 +13706,6 @@
         "amenity": "bench",
         "backrest": "yes",
         "check_date": "2023-05-02",
-        "material": "wood"
-      }
-    },
-    {
-      "type": "node",
-      "id": 4142395089,
-      "lat": 45.5119721,
-      "lon": 9.1997551,
-      "tags": {
-        "amenity": "bench",
-        "backrest": "yes",
         "material": "wood"
       }
     },
@@ -19426,6 +19406,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "no",
+        "check_date": "2025-04-22",
         "material": "stone"
       }
     },
@@ -19437,6 +19418,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "no",
+        "check_date": "2025-04-22",
         "material": "stone"
       }
     },
@@ -19448,6 +19430,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "no",
+        "check_date": "2025-04-22",
         "material": "stone"
       }
     },
@@ -19459,6 +19442,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "no",
+        "check_date": "2025-04-22",
         "material": "stone"
       }
     },
@@ -31936,7 +31920,8 @@
       "lat": 45.4745707,
       "lon": 9.1973283,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "yes"
       }
     },
     {
@@ -38004,7 +37989,8 @@
       "lat": 45.435643,
       "lon": 9.2402949,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "no"
       }
     },
     {
@@ -38893,7 +38879,8 @@
       "lat": 45.4428441,
       "lon": 9.2452841,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "yes"
       }
     },
     {
@@ -42213,7 +42200,7 @@
         "amenity": "bench",
         "armrest": "no",
         "backrest": "yes",
-        "colour": "Yellow",
+        "colour": "yellow",
         "material": "wood",
         "seats": "3"
       }
@@ -43572,7 +43559,8 @@
       "lat": 45.4428471,
       "lon": 9.2453167,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "yes"
       }
     },
     {
@@ -50397,7 +50385,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "yes",
-        "colour": "Green",
+        "colour": "green",
         "material": "wood"
       }
     },
@@ -50409,7 +50397,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "yes",
-        "colour": "Green",
+        "colour": "green",
         "material": "wood"
       }
     },
@@ -52886,7 +52874,8 @@
       "lat": 45.4697862,
       "lon": 9.2236753,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "no"
       }
     },
     {
@@ -52944,7 +52933,8 @@
       "lat": 45.4735257,
       "lon": 9.2233687,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "yes"
       }
     },
     {
@@ -52963,7 +52953,8 @@
       "lat": 45.4700703,
       "lon": 9.2236647,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "yes"
       }
     },
     {
@@ -53173,7 +53164,8 @@
       "lat": 45.4717184,
       "lon": 9.2236441,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "yes"
       }
     },
     {
@@ -53191,7 +53183,8 @@
       "lat": 45.473026,
       "lon": 9.2233813,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "yes"
       }
     },
     {
@@ -53325,7 +53318,8 @@
       "lat": 45.4718313,
       "lon": 9.2236395,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "yes"
       }
     },
     {
@@ -53402,7 +53396,8 @@
       "lat": 45.473251,
       "lon": 9.2233643,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "yes"
       }
     },
     {
@@ -54841,7 +54836,8 @@
       "lat": 45.4651935,
       "lon": 9.170856,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "no"
       }
     },
     {
@@ -56265,7 +56261,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "yes",
-        "colour": "Green",
+        "colour": "green",
         "material": "wood",
         "seats": "3"
       }
@@ -56278,7 +56274,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "yes",
-        "colour": "Green",
+        "colour": "green",
         "material": "wood",
         "seats": "3"
       }
@@ -56291,7 +56287,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "yes",
-        "colour": "Green",
+        "colour": "green",
         "material": "wood",
         "seats": "3"
       }
@@ -56304,7 +56300,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "yes",
-        "colour": "Green",
+        "colour": "green",
         "material": "wood",
         "seats": "3"
       }
@@ -56317,7 +56313,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "yes",
-        "colour": "Green",
+        "colour": "green",
         "material": "wood",
         "seats": "3"
       }
@@ -56330,7 +56326,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "yes",
-        "colour": "Green",
+        "colour": "green",
         "material": "wood",
         "seats": "3"
       }
@@ -56343,7 +56339,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "yes",
-        "colour": "Green",
+        "colour": "green",
         "material": "wood",
         "seats": "3"
       }
@@ -56356,7 +56352,7 @@
       "tags": {
         "amenity": "bench",
         "backrest": "yes",
-        "colour": "Green",
+        "colour": "green",
         "material": "wood",
         "seats": "3"
       }
@@ -62734,7 +62730,8 @@
       "lat": 45.4746407,
       "lon": 9.2003663,
       "tags": {
-        "amenity": "bench"
+        "amenity": "bench",
+        "backrest": "yes"
       }
     },
     {
@@ -63624,6 +63621,371 @@
         "armrest": "no",
         "backrest": "yes",
         "material": "wood"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12778490343,
+      "lat": 45.4474727,
+      "lon": 9.2490811,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923062,
+      "lat": 45.4653044,
+      "lon": 9.2662875,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923063,
+      "lat": 45.4651858,
+      "lon": 9.266158,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923064,
+      "lat": 45.46513,
+      "lon": 9.2662721,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923065,
+      "lat": 45.4651136,
+      "lon": 9.2661791,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923066,
+      "lat": 45.4651172,
+      "lon": 9.2660951,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923067,
+      "lat": 45.4650803,
+      "lon": 9.266011,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923068,
+      "lat": 45.4649107,
+      "lon": 9.2659808,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923069,
+      "lat": 45.464817,
+      "lon": 9.2658732,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923070,
+      "lat": 45.4648245,
+      "lon": 9.2657939,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923071,
+      "lat": 45.4647817,
+      "lon": 9.265795,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923072,
+      "lat": 45.464776,
+      "lon": 9.2658337,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923073,
+      "lat": 45.4648132,
+      "lon": 9.2656076,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923074,
+      "lat": 45.4648272,
+      "lon": 9.2655866,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923075,
+      "lat": 45.4647054,
+      "lon": 9.2656442,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923076,
+      "lat": 45.4646702,
+      "lon": 9.2656568,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923077,
+      "lat": 45.4646758,
+      "lon": 9.2656347,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12808923078,
+      "lat": 45.4647272,
+      "lon": 9.2657749,
+      "tags": {
+        "access": "yes",
+        "amenity": "bench",
+        "armrest": "no",
+        "backrest": "yes",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813925790,
+      "lat": 45.4434931,
+      "lon": 9.1239626,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813937440,
+      "lat": 45.4435591,
+      "lon": 9.1237371,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813955489,
+      "lat": 45.4430485,
+      "lon": 9.1235985,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813955542,
+      "lat": 45.4434449,
+      "lon": 9.1239373,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813958352,
+      "lat": 45.4435802,
+      "lon": 9.1239095,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813971289,
+      "lat": 45.44314,
+      "lon": 9.1236003,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813975428,
+      "lat": 45.4432649,
+      "lon": 9.1239519,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813981121,
+      "lat": 45.4432464,
+      "lon": 9.1239611,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813981779,
+      "lat": 45.4432867,
+      "lon": 9.1239415,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813981813,
+      "lat": 45.4434255,
+      "lon": 9.1237618,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813983031,
+      "lat": 45.4435934,
+      "lon": 9.1238387,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813992879,
+      "lat": 45.4430366,
+      "lon": 9.1236741,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813993403,
+      "lat": 45.4434116,
+      "lon": 9.1238186,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813997044,
+      "lat": 45.4430889,
+      "lon": 9.1235707,
+      "tags": {
+        "amenity": "bench"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12813997045,
+      "lat": 45.4434958,
+      "lon": 9.12372,
+      "tags": {
+        "amenity": "bench"
       }
     },
     {
@@ -65835,6 +66197,27 @@
       "tags": {
         "amenity": "bench",
         "material": "concrete"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1381524329,
+      "center": {
+        "lat": 45.4709829,
+        "lon": 9.1888905
+      },
+      "nodes": [
+        12790206880,
+        12790206873,
+        12790206879,
+        12790206878,
+        12790206877,
+        12790206876,
+        12790206875,
+        12790206874
+      ],
+      "tags": {
+        "amenity": "bench"
       }
     }
   ]

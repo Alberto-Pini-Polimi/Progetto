@@ -268,6 +268,7 @@ class Facilitatore(ElementoOSM):
         return f"Facilitatore {self.tipo} (ID: {self.id})"
 
 class Percorso():
+    
     def __init__(self, encoded_polyline):
         # decoding della polyline
         self.coordinate_della_polyline = polyline.decode(encoded_polyline)
@@ -819,7 +820,7 @@ def main():
     print("Caricamento dati da file JSON...")
     elementi_osm = caricaElementiDaJSON(directory_risultati) # qua carico tutti gli elementi 
     print(f"Caricati {len(elementi_osm)} elementi da OSM")   # a prescindere dalla vicinanza al percorso
-
+    
     # ------------ calcolo iniziale del percorso ------------
     print(f"Calcolo percorso pedonale da {inizio} a {fine}...")
     encoded_polyline = calcolaPercorsoConORS(inizio, fine)

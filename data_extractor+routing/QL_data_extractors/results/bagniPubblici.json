@@ -2,8 +2,8 @@
   "version": 0.6,
   "generator": "Overpass API 0.7.62.5 1bd436f1",
   "osm3s": {
-    "timestamp_osm_base": "2025-04-19T08:57:54Z",
-    "timestamp_areas_base": "2025-02-06T02:17:44Z",
+    "timestamp_osm_base": "2025-05-08T07:14:45Z",
+    "timestamp_areas_base": "2024-12-31T00:49:33Z",
     "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
   },
   "elements": [
@@ -1651,8 +1651,8 @@
     {
       "type": "node",
       "id": 6349608379,
-      "lat": 45.473854,
-      "lon": 9.1033953,
+      "lat": 45.4738925,
+      "lon": 9.1034046,
       "tags": {
         "amenity": "toilets",
         "toilets:disposal": "chemical",
@@ -2818,6 +2818,36 @@
       "lon": 9.2410104,
       "tags": {
         "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12790053301,
+      "lat": 45.5027622,
+      "lon": 9.2224192,
+      "tags": {
+        "access": "permissive",
+        "amenity": "toilets",
+        "fee": "no",
+        "indoor": "yes",
+        "toilets:disposal": "flush",
+        "unisex": "yes",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12790053401,
+      "lat": 45.5027622,
+      "lon": 9.2224192,
+      "tags": {
+        "access": "permissive",
+        "amenity": "toilets",
+        "fee": "no",
+        "indoor": "yes",
+        "toilets:disposal": "flush",
+        "unisex": "yes",
+        "wheelchair": "yes"
       }
     },
     {
