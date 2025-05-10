@@ -17,6 +17,12 @@ COORDINATE_INIZIO = [9.17988, 45.47006]  # [lon, lat] castello sforzesco
 #COORDINATE_FINE = [9.203530, 45.485146] # centrale
 COORDINATE_FINE = [9.226897, 45.478111] # piazza leo
 
+# COORDINATE_INIZIO = [46.538795718940136, 12.124246397899869] 
+# COORDINATE_FINE = [46.53569202884132, 12.1411393835463]
+
+# COORDINATE_INIZIO = [round(COORDINATE_INIZIO[1], 6), round(COORDINATE_INIZIO[0], 6)]
+# COORDINATE_FINE = [round(COORDINATE_FINE[1], 6), round(COORDINATE_FINE[0], 6)]
+
 # definisco un'area di distanza attorno ai percorsi
 BUFFER_FACILITATORI_IN_METRI = 30
 BUFFER_BARRIERE_IN_METRI = 5
@@ -401,37 +407,6 @@ class Percorso():
                         self.facilitatoriTrovati.append(elemento)
         
         return self.barriereTrovate, self.facilitatoriTrovati
-    
-    # def aggiungiBarrieraDaEvitare(self, barriera):
-    #     self.barriere_da_evitare.append(barriera)
-    
-    # def aggiungiSBFacilitatorePreferito(self, facilitatore):
-    #     self.facilitatori_da_includere.append(facilitatore)
-    
-    # def creaPoligoniBarriere(self):
-    #     """Crea poligoni per le barriere da evitare nel percorso"""
-    #     poligoni = []
-        
-    #     for barriera in self.barriere_da_evitare:
-    #         centroide = barriera.trovaCoordinateCentroide()
-    #         # Proietta il punto in UTM
-    #         punto_utm = project_to_utm(centroide[0], centroide[1])
-    #         # Crea un buffer in metri intorno alla barriera (es. 20 metri) e riproiettalo in WGS84
-    #         cerchio_utm = Point(punto_utm).buffer(0.0002)
-    #         cerchio_coords = [project_to_wgs(x, y) for x, y in cerchio_utm.exterior.coords]
-    #         poligoni.append(Polygon(cerchio_coords))
-        
-    #     return poligoni
-    
-    # def ottieniFacilitatoriCoordinates(self):
-    #     """Restituisce le coordinate dei facilitatori da includere come waypoints"""
-    #     waypoints = []
-    #     for facilitatore in self.facilitatori_da_includere:
-    #         centroide = facilitatore.trovaCoordinateCentroide()
-    #         waypoints.append((centroide[1], centroide[0]))  # Inverte in [lat, lon] per ORS
-    #     return waypoints
-
-
 
 
 
