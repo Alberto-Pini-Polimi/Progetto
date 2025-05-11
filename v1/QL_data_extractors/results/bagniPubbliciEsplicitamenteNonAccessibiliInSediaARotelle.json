@@ -1,0 +1,272 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.5 1bd436f1",
+  "osm3s": {
+    "timestamp_osm_base": "2025-05-08T07:14:45Z",
+    "timestamp_areas_base": "2024-12-31T00:49:33Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 365465249,
+      "lat": 45.5296852,
+      "lon": 9.2110526,
+      "tags": {
+        "amenity": "toilets",
+        "fee": "yes",
+        "fixme": "seems to be closed down",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1492437632,
+      "lat": 45.4763927,
+      "lon": 9.2282918,
+      "tags": {
+        "amenity": "toilets",
+        "changing_table": "no",
+        "fee": "no",
+        "female": "yes",
+        "male": "yes",
+        "toilets:disposal": "flush",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2289297513,
+      "lat": 45.4794763,
+      "lon": 9.2268596,
+      "tags": {
+        "amenity": "toilets",
+        "check_date": "2022-06-06",
+        "fee": "no",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3373424475,
+      "lat": 45.4456148,
+      "lon": 9.2451996,
+      "tags": {
+        "amenity": "toilets",
+        "check_date": "2024-09-11",
+        "fee": "yes",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3446525186,
+      "lat": 45.4728011,
+      "lon": 9.1788992,
+      "tags": {
+        "amenity": "toilets",
+        "check_date": "2021-09-06",
+        "drinking_water": "no",
+        "fee": "no",
+        "toilets:disposal": "chemical",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4612222081,
+      "lat": 45.4777728,
+      "lon": 9.2351198,
+      "tags": {
+        "amenity": "toilets",
+        "check_date": "2025-03-22",
+        "check_date:wheelchair": "2025-03-22",
+        "fee": "no",
+        "male": "yes",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5789449165,
+      "lat": 45.4682506,
+      "lon": 9.1752641,
+      "tags": {
+        "access": "yes",
+        "addr:city": "Milano",
+        "addr:postcode": "20123",
+        "addr:street": "Piazzale Luigi Cadorna",
+        "amenity": "toilets",
+        "changing_table": "no",
+        "fee": "0.50 EUR",
+        "fee:urinal": "0.30 EUR",
+        "female": "yes",
+        "level": "-1",
+        "male": "yes",
+        "toilets:disposal": "flush",
+        "toilets:position": "seated;urinal",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5940637586,
+      "lat": 45.4735432,
+      "lon": 9.1765453,
+      "tags": {
+        "amenity": "toilets",
+        "fee": "no",
+        "toilets:type": "mobile",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9162150890,
+      "lat": 45.4353591,
+      "lon": 9.2413583,
+      "tags": {
+        "amenity": "toilets",
+        "changing_table": "no",
+        "fee": "no",
+        "toilets:disposal": "chemical",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10036294917,
+      "lat": 45.4475319,
+      "lon": 9.1341897,
+      "tags": {
+        "access": "yes",
+        "amenity": "toilets",
+        "changing_table": "no",
+        "fee": "yes",
+        "unisex": "yes",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10771368418,
+      "lat": 45.4751761,
+      "lon": 9.2291716,
+      "tags": {
+        "access": "yes",
+        "amenity": "toilets",
+        "fee": "no",
+        "toilets:handwashing": "yes",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12146052001,
+      "lat": 45.4788309,
+      "lon": 9.1970703,
+      "tags": {
+        "access": "yes",
+        "amenity": "toilets",
+        "charge": "0.2€ cash",
+        "fee": "yes",
+        "indoor": "yes",
+        "toilets:disposal": "flush",
+        "unisex": "yes",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12393882662,
+      "lat": 45.5091273,
+      "lon": 9.188472,
+      "tags": {
+        "access": "yes",
+        "amenity": "toilets",
+        "changing_table": "no",
+        "drinking_water": "yes",
+        "fee": "no",
+        "female": "yes",
+        "level": "0",
+        "male": "yes",
+        "toilets:handwashing": "yes",
+        "toilets:menstrual_products": "no",
+        "toilets:position": "seated",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12698275306,
+      "lat": 45.4757078,
+      "lon": 9.2353008,
+      "tags": {
+        "access": "yes",
+        "addr:housenumber": "2",
+        "addr:street": "Via Celeste Clericetti",
+        "amenity": "toilets",
+        "changing_table": "no",
+        "check_date": "2025-03-25",
+        "level": "1",
+        "toilets:disposal": "flush",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "way",
+      "id": 604055835,
+      "center": {
+        "lat": 45.4767691,
+        "lon": 9.2314041
+      },
+      "nodes": [
+        5734915209,
+        5732656183,
+        5732656175,
+        5732656178,
+        5734915206,
+        5732656206,
+        5734915209
+      ],
+      "tags": {
+        "amenity": "toilets",
+        "area": "yes",
+        "changing_table": "no",
+        "fee": "no",
+        "female": "yes",
+        "indoor": "room",
+        "level": "-1",
+        "repeat_on": "0-1",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "way",
+      "id": 604055836,
+      "center": {
+        "lat": 45.4767694,
+        "lon": 9.2313812
+      },
+      "nodes": [
+        5732656175,
+        5732656182,
+        5732656176,
+        5732656177,
+        5732656178,
+        5732656175
+      ],
+      "tags": {
+        "amenity": "toilets",
+        "area": "yes",
+        "changing_table": "no",
+        "fee": "no",
+        "indoor": "room",
+        "level": "-1",
+        "male": "yes",
+        "repeat_on": "0-1",
+        "wheelchair": "no"
+      }
+    }
+  ]
+}

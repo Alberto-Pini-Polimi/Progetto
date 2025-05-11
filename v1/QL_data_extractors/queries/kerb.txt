@@ -1,0 +1,11 @@
+[out:json];
+
+relation(44915) -> .milano;
+.milano map_to_area -> .areaMilano;
+
+( // tutti i kerb
+  nwr(area.areaMilano)["barrier"~"kerb"];
+  nwr(around.milano:1500)["barrier"~"kerb"];
+) -> .tutti;
+
+.tutti out center;
