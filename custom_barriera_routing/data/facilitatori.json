@@ -1,0 +1,25 @@
+{
+    "elementi": [
+        {
+            "id": 1,
+            "tipo": "facilitatore",
+            "per": "non vedente",
+            "autore": null,
+            "ranking": 0,
+            "nome": "attraversamento",
+            "descrizione": "attraversamento con segnale acustico",
+            "immagine": null,
+            "elementoOSM": null,
+            "coordinateCentroide": {
+                "latitudine": null,
+                "longitudine": null
+            },
+            "coordinate": [
+                {
+                    "latitudine": null,
+                    "longitudine": null
+                }
+            ]
+        }
+    ]
+}
