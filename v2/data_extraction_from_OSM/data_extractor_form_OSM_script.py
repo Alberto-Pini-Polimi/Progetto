@@ -186,9 +186,18 @@ def classifica_dati(elementoOSM):
 
 def estrai_coordinate(elementoOSM):
 
+    # se è un nodo allora semplicemente:
+    latitudine = elementoOSM.get("lat")
+    longitudine = elementoOSM.get("lon")
+
+    # altrimenti è una way o una relation e quindi:
+    if latitudine is None or longitudine is None:
+        latitudine = elementoOSM["center"].get("lat")
+        longitudine = elementoOSM["center"].get("lon")
+
     return {
-        "longitudine": elementoOSM.get("lon"),
-        "latitudine": elementoOSM.get("lat")
+        "longitudine": longitudine,
+        "latitudine": latitudine
     }
 
 
