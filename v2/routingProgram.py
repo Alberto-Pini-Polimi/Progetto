@@ -27,8 +27,8 @@ COORDINATE_FINE = [9.226897, 45.478111] # piazza leo
 # L'istanza dell'utente è definita sotto nel main
 
 # definisco un'area di distanza attorno ai percorsi
-BUFFER_FACILITATORI_IN_METRI = 30
-BUFFER_BARRIERE_IN_METRI = 5
+BUFFER_FACILITATORI_IN_METRI = 10
+BUFFER_BARRIERE_IN_METRI = 3
 BUFFER_INFRASTRUTTURE_IN_METRI = 50
 
 
@@ -99,6 +99,7 @@ class Utente():
         
         self.nickname = nickname # dev'essere univoco
         self.problema = problema_di_mobilità
+        self.preferenze = None # qui si esprimono le preferenze dell'utente
 
     def interessa(self, elemento):
         """
@@ -145,6 +146,16 @@ class ElementoOSM:
         elif self.ranking < 0:
             self.ranking = 0
 
+    def per(self, utente):
+
+        if utente.problema.value in self.barreira_per:
+            return TipoElemento.BARRIERA
+        elif utente.problema.value in self.facilitatore_per:
+            return TipoElemento.FACILITATORE
+        elif utente.problema.value in self.infrastruttura_per:
+            return TipoElemento.INFRASTRUTTURA
+        else:
+            return None
 
 
 
@@ -180,8 +191,8 @@ class Percorso():
     def __init__(self, percorso):
 
         # prendo i dati del summary
-        self.distance = percorso["summary"]["distance"]
-        self.duration = percorso["summary"]["duration"]
+        self.distanza = percorso["summary"]["distance"]
+        self.durata = percorso["summary"]["duration"]
         # prendo il bbox (bounding box per acere un rang in cui cercare)
         self.bbox = percorso["bbox"] # lo userò per cercare barriere e facilitatori nel DB
         # faccio il decoding della polyline (encodata in geometry)
@@ -207,8 +218,6 @@ class Percorso():
         self.creaBufferFacilitatori()
         self.creaBufferInfrastrutture()
 
-
-
     def creaBufferFacilitatori(self):
         """Crea un buffer attorno al percorso in UTM per i facilitatori"""
         self.bufferFacilitatori_utm = self.percorso_utm.buffer(BUFFER_FACILITATORI_IN_METRI)
@@ -233,14 +242,10 @@ class Percorso():
         # Crea un poligono per le infrastrutture
         self.bufferInfrastrutture_geo = Polygon(area_limitrofa_al_percorso_geo_coords)
 
-
-
-    def isNelBuffer(self, punto, tipo_buffer):
+    def isNelBuffer(self, elemento_osm, tipo_buffer):
         """Verifica se un punto è all'interno del buffer"""
-        if isinstance(punto, tuple) or isinstance(punto, list):
-            punto_geo = Point(punto)  # lon, lat
-        else:
-            punto_geo = punto  # Assume che sia già un oggetto Point
+
+        punto_geo = Point([elemento_osm.coordinate_centroide.get("longitudine"), elemento_osm.coordinate_centroide.get("latitudine")])
             
         # Proietta il punto barriera in UTM
         punto_utm = project_to_utm(punto_geo.x, punto_geo.y)
@@ -254,39 +259,32 @@ class Percorso():
             return self.bufferInfrastrutture_utm.contains(punto_utm_shapely)
         else:
             raise ValueError("Tipo di buffer non valido. Deve essere 'barriere' o 'facilitatori'.")
-    
-    
 
-
-    def trovaElementiSulPercorso(self, elementi_caricati, buffer_in_cui_cercare):
+    def trovaElementiSulPercorso(self, elementi_caricati, utente):
         """
-        Trova barriere e facilitatori sul percorso in base agli elementi caricati
+        Trova barriere e facilitatori sul percorso in base agli elementi caricati e all'utente
         """
         self.barriere_trovate = []
         self.facilitatori_trovati = []
         self.infrastrutture_trovate = []
 
         for elemento in elementi_caricati:
-            # Verifica se l'elemento è nel buffer
-            if self.isNelBuffer(elemento, buffer_in_cui_cercare):
-                if buffer_in_cui_cercare == "facilitatori":
-                    self.facilitatori_trovati.append(elemento)
-                elif buffer_in_cui_cercare == "barriere":
-                    self.barriere_trovate.append(elemento)
-                elif buffer_in_cui_cercare == "infrastrutture":
-                    self.infrastrutture_trovate.append(elemento)
+            
+            # Verifica cosa l'elemento è per l'utente e se è nel rispettivo buffer
+
+            if elemento.per(utente) == TipoElemento.FACILITATORE and self.isNelBuffer(elemento, "facilitatori"):
+                self.facilitatori_trovati.append(elemento)
+            
+            elif elemento.per(utente) == TipoElemento.BARRIERA and self.isNelBuffer(elemento, "barriere"):
+                self.barriere_trovate.append(elemento)
+            
+            elif elemento.per(utente) == TipoElemento.INFRASTRUTTURA and self.isNelBuffer(elemento, "infrastrutture"):
+                self.infrastrutture_trovate.append(elemento)
+            
+            else:
+                continue
         
         return self.barriere_trovate, self.facilitatori_trovati, self.infrastrutture_trovate
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -338,23 +336,43 @@ class MappaFolium:
             popup=popup
         ).add_to(self.mappa)
     
-    def aggiungiElemento(self, elemento, evidenzia=False):
+    def aggiungiDettagli(self, durata, distanza, numero_barriere_trovate):
+        """Aggiunge un pannello con i dettagli del percorso alla mappa"""
+        html_content = f"""
+            <div id="info-panel" style="position: fixed;
+                        top: 10px;
+                        right: 10px;
+                        z-index:9999;
+                        background-color:white;
+                        opacity:0.9;
+                        border:2px solid grey;
+                        padding:10px;">
+                <h3>Info sul Percorso</h3>
+                distanza: {distanza:.2f} m<br>
+                durata: {self.formatta_durata(durata)}<br>
+                # barriere trovate: {numero_barriere_trovate}
+            </div>
+        """
+        self.mappa.get_root().html.add_child(folium.Element(html_content))
+
+    def formatta_durata(self, secondi):
+        """Formatta la durata in ore, minuti e secondi"""
+        ore = int(secondi // 3600)
+        minuti = int((secondi % 3600) // 60)
+        secondi_rimanenti = int(secondi % 60)
+        return f"{ore} h : {minuti} min : {secondi_rimanenti} sec"
+    
+    def aggiungiElemento(self, elemento, colore="red", icona="warning-sign"):
         """Aggiunge un ElementoOSM (Barriera o Facilitatore) alla mappa"""
-        centroide = elemento.trovaCoordinateCentroide()
-        punto = (centroide[1], centroide[0])  # Inverte in [lat, lon] per folium
         
-        colore = 'red' if isinstance(elemento, Barriera) else 'green'
-        icona = 'warning-sign' if isinstance(elemento, Barriera) else 'ok-sign'
-        
-        # Se l'elemento è evidenziato, cambia lo stile
-        if evidenzia:
-            colore = 'purple' if isinstance(elemento, Barriera) else 'blue'
+        punto = (elemento.coordinate_centroide.get("latitudine"), elemento.coordinate_centroide.get("longitudine"))
         
         popup = folium.Popup(
             f"""
-            <b>{elemento.tipo.capitalize()}</b><br>
-            ID: {elemento.id}<br>
-            <a href="{elemento.immagine_url}" target="_blank">Visualizza immagine</a>
+                <h3>{elemento.nome}</h3>
+                <p>{elemento.descrizione}<\p>
+                <br>
+                ID: {elemento.id}
             """,
             max_width=300
         )
@@ -363,7 +381,7 @@ class MappaFolium:
             punto=punto,
             colore=colore,
             icona=icona,
-            tooltip=str(elemento),
+            tooltip=elemento.nome,
             popup=popup
         )
     
@@ -376,76 +394,53 @@ class MappaFolium:
             print(f"Errore nel salvataggio della mappa: {e}")
             return False
 
-def visualizzaPercorsoSuMappa(percorso, barriere, facilitatori, selezionati_barriere=None, selezionati_facilitatori=None):
-    """
-    Visualizza un percorso con barriere e facilitatori su una mappa Folium
-    
-    Args:
-        percorso: Oggetto Percorso
-        barriere: Lista di oggetti Barriera
-        facilitatori: Lista di oggetti Facilitatore
-        selezionati_barriere: Lista di ID delle barriere selezionate (opzionale)
-        selezionati_facilitatori: Lista di ID dei facilitatori selezionati (opzionale)
-    
-    Returns:
-        str: percorso del file HTML della mappa
-    """
-    # Crea una nuova mappa centrata sul percorso
+def creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_file):
+     # Crea la mappa
     centro_percorso = percorso.percorso_geo.centroid
     mappa = MappaFolium(centro=(centro_percorso.y, centro_percorso.x))
     
     # Aggiungi il percorso
     mappa.aggiungiPolyline(percorso.coordinate_della_polyline)
     
-    # Aggiungi il buffer delle barriere
-    mappa.aggiungiPoligono(
-        [(y, x) for x, y in percorso.bufferBarriere_geo.exterior.coords],
-        tooltip='Area di ricerca barriere'
-    )
-
-    # Aggiungi il buffer dei facilitatori
+    # Aggiungi il buffer barriere
+    # mappa.aggiungiPoligono(
+    #     [(y, x) for x, y in percorso.bufferBarriere_geo.exterior.coords],
+    #     tooltip='Area di ricerca barriere',
+    #     colore='orange'
+    # )
+    # Aggiungi il buffer facilitatori
     mappa.aggiungiPoligono(
         [(y, x) for x, y in percorso.bufferFacilitatori_geo.exterior.coords],
-        tooltip='Area di ricerca facilitatori'
+        tooltip='Area di ricerca facilitatori',
+        colore='lightgreen'
     )
-    
-    # Aggiungi le barriere
-    for barriera in barriere:
-        evidenziata = selezionati_barriere and barriera.id in selezionati_barriere
-        mappa.aggiungiElemento(barriera, evidenzia=evidenziata)
-    
+    # Aggiungi il buffer infrastrutture
+    mappa.aggiungiPoligono(
+        [(y, x) for x, y in percorso.bufferInfrastrutture_geo.exterior.coords],
+        tooltip='Area di ricerca infrastrutture',
+        colore='lightblue'
+    )
+
+    # Aggiungi i infrastrutture
+    for infrastruttura in infrastrutture:
+        mappa.aggiungiElemento(infrastruttura, colore="blue", icona="plus-sign")
     # Aggiungi i facilitatori
     for facilitatore in facilitatori:
-        evidenziato = selezionati_facilitatori and facilitatore.id in selezionati_facilitatori
-        mappa.aggiungiElemento(facilitatore, evidenzia=evidenziato)
+        mappa.aggiungiElemento(facilitatore, colore="green", icona="ok-sign")
+    # Aggiungi le barriere
+    for barriera in barriere:
+        mappa.aggiungiElemento(barriera, colore="red", icona="warning-sign")
     
-    # Salva la mappa
-    nome_file = f"mappa_percorso_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-    mappa.salvaMappa(nome_file)
+    # aggiungi durata e distanza
+    mappa.aggiungiDettagli(percorso.durata, percorso.distanza, len(barriere))
     
-    return nome_file
 
+    # Salva la mappa sovrascrivendo quella precedente
+    mappa.salvaMappa(mappa_file)
+    #print(f"Mappa del percorso salvata in: {mappa_file}")
+    webbrowser.open('file://' + os.path.realpath(mappa_file))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return
 
 
 
@@ -597,16 +592,6 @@ def chiamataAPIdiORS(inizio, fine, aree_da_evitare=None, waypoints=None):
         return None
 
 
-
-
-
-
-
-
-
-
-
-
 def mostraBarriereEFacilitatori(barriere, facilitatori):
     """
     Mostra le barriere e i facilitatori trovati e consente all'utente di selezionare quali evitare/includere
@@ -714,10 +699,10 @@ def main():
         'Authorization': ORS_API_KEY
     }
     directory_risultati = "data"  # Directory dove sono salvati i risultati delle query Overpass
-    mappa_file = "mappa_percorso.html"  # Nome fisso per il file della mappa
+    file_della_mappa = "mappa_percorso.html"  # Nome fisso per il file della mappa
 
     # ------------ dati di input ------------
-    utente = Utente("firstUserEver", ProblemiMobilità.MOTORIA)
+    utente = Utente("firstUserEver", ProblemiMobilità.VISIVA)
     # per inserire coordinate di inizio e fine
     inizio = COORDINATE_INIZIO
     fine = COORDINATE_FINE
@@ -738,15 +723,22 @@ def main():
 
     # ------------ caricamento dati ------------
     print("\nCaricamento dati da file JSON...")
-    elementi_osm = caricaElementiDaJSON(directory_risultati, percorso.bbox, utente) # qua carico tutti gli elementi 
-    print(f"\nCaricati {len(elementi_osm)} elementi all'interno della bbox del percoso calcolato")   # a prescindere dalla vicinanza al percorso
+    elementi_osm_personalizzati = caricaElementiDaJSON(directory_risultati, percorso.bbox, utente) # qua carico tutti gli elementi 
+    print(f"\nCaricati {len(elementi_osm_personalizzati)} elementi all'interno della bbox del percoso calcolato")   # a prescindere dalla vicinanza al percorso
     # questi elementi_osm sono già stati estratti considerando l'utente che li ha richiesti e la bbox del percorso
 
 
 
 
 
-    # ora non c'è più l'iterazione!!
+    # parto col primo percorso e lo visualizzo:
+
+    print(f"\nCercando barriere e facilitatori per utente {utente.nickname} con disabilità: {utente.problema} lungo il percorso di default")
+    barriere, facilitatori, infrastrutture = percorso.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
+    print(f"Risultato:\n - {len(barriere)} barriere\n - {len(facilitatori)} facilitatori\n - {len(infrastrutture)} infrastrutture\ntrovati sul percorso")
+
+
+    creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, file_della_mappa)
 
 
 
@@ -800,40 +792,40 @@ def main():
     #     barriere, facilitatori = percorso.trovaElementiSulPercorso(utente, elementi_osm)
     #     print(f"Trovate {len(barriere)} barriere e {len(facilitatori)} facilitatori sul percorso.")
         
-    #     # Crea la mappa
-    #     centro_percorso = percorso.percorso_geo.centroid
-    #     mappa = MappaFolium(centro=(centro_percorso.y, centro_percorso.x))
+        # # Crea la mappa
+        # centro_percorso = percorso.percorso_geo.centroid
+        # mappa = MappaFolium(centro=(centro_percorso.y, centro_percorso.x))
         
-    #     # Aggiungi il percorso
-    #     mappa.aggiungiPolyline(percorso.coordinate_della_polyline)
+        # # Aggiungi il percorso
+        # mappa.aggiungiPolyline(percorso.coordinate_della_polyline)
         
-    #     # Aggiungi il buffer barriere
-    #     mappa.aggiungiPoligono(
-    #         [(y, x) for x, y in percorso.bufferBarriere_geo.exterior.coords],
-    #         tooltip='Area di ricerca barriere',
-    #         colore='orange'
-    #     )
-    #     # Aggiungi il buffer facilitatori
-    #     mappa.aggiungiPoligono(
-    #         [(y, x) for x, y in percorso.bufferFacilitatori_geo.exterior.coords],
-    #         tooltip='Area di ricerca facilitatori',
-    #         colore='lightgreen'
-    #     )
+        # # Aggiungi il buffer barriere
+        # mappa.aggiungiPoligono(
+        #     [(y, x) for x, y in percorso.bufferBarriere_geo.exterior.coords],
+        #     tooltip='Area di ricerca barriere',
+        #     colore='orange'
+        # )
+        # # Aggiungi il buffer facilitatori
+        # mappa.aggiungiPoligono(
+        #     [(y, x) for x, y in percorso.bufferFacilitatori_geo.exterior.coords],
+        #     tooltip='Area di ricerca facilitatori',
+        #     colore='lightgreen'
+        # )
 
-    #     # Aggiungi le barriere
-    #     for barriera in barriere:
-    #         evidenziato = barriera.id in id_barriere_selezionate
-    #         mappa.aggiungiElemento(barriera, evidenzia=evidenziato)
+        # # Aggiungi le barriere
+        # for barriera in barriere:
+        #     evidenziato = barriera.id in id_barriere_selezionate
+        #     mappa.aggiungiElemento(barriera, evidenzia=evidenziato)
         
-    #     # Aggiungi i facilitatori
-    #     for facilitatore in facilitatori:
-    #         evidenziato = facilitatore.id in id_facilitatori_selezionati
-    #         mappa.aggiungiElemento(facilitatore, evidenzia=evidenziato)
+        # # Aggiungi i facilitatori
+        # for facilitatore in facilitatori:
+        #     evidenziato = facilitatore.id in id_facilitatori_selezionati
+        #     mappa.aggiungiElemento(facilitatore, evidenzia=evidenziato)
         
-    #     # Salva la mappa sovrascrivendo quella precedente
-    #     mappa.salvaMappa(mappa_file)
-    #     print(f"Mappa del percorso salvata in: {mappa_file}")
-    #     webbrowser.open('file://' + os.path.realpath(mappa_file))
+        # # Salva la mappa sovrascrivendo quella precedente
+        # mappa.salvaMappa(mappa_file)
+        # print(f"Mappa del percorso salvata in: {mappa_file}")
+        # webbrowser.open('file://' + os.path.realpath(mappa_file))
         
     #     # Mostra le scelte precedenti all'utente
     #     if tutte_barriere_da_evitare:
