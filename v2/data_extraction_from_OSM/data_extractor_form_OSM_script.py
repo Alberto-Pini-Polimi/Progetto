@@ -10,7 +10,7 @@ import uuid
 
 Trova tutti i file .txt nella cartella "queries"
 esegue questi file come se fossero query-QL con l'API di Overpass-Turbo
-Per ogni query eseguita con successo apparirà un file .json nella cartella "results"
+Raccoglie tutti i risultati in un unico grande array JSON nel file "fromOSM.json"
 Il file .json generato avrà il formato e la classificazione giusta (rispetto alla tipologia e alla disabilità)
 
 '''
@@ -30,16 +30,8 @@ def esegui_query_overpass(query):
         raise Exception(f"Errore {response.status_code}: {response.text}")
 
 def salva_json(nome_file, dati):
-    with open(nome_file, 'a', encoding='utf-8') as f: # aggiungi i dati al file
+    with open(nome_file, 'w', encoding='utf-8') as f:  # Sovrascrive il file invece di appendere
         json.dump(dati, f, default=convert_to_json, ensure_ascii=False, indent=4)
-
-
-
-
-
-
-
-
 
 
 class ProblemiMobilita(Enum):
@@ -86,12 +78,6 @@ def convert_to_json(obj):
     elif isinstance(obj, uuid.UUID):
         return str(obj)  # Converti l'UUID in stringa
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
-
-
-
-
-
-
 
 
 def classifica_dati(elementoOSM):
@@ -220,7 +206,7 @@ def parsa_dati(risultatoQueryOSM):
 
         dati_parsati.append(
             {
-                "id": uuid.uuid4(),
+                "id": str(uuid.uuid4()),  # Converto direttamente UUID in stringa
                 "barreiraPer": disabilitàPerCuiFungeDaBarriera,
                 "facilitatorePer": disabilitàPerCuiFungeDaFacilitatore,
                 "infrastrutturaPer": disabilitàPerCuiFungeDaInfrastruttura,
@@ -237,28 +223,8 @@ def parsa_dati(risultatoQueryOSM):
     return dati_parsati
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # === Main ===
 def main():
-
     # trovo le varie cartelle
     cwd = os.getcwd()
     cartella_queries = os.path.join(cwd, "queries")
@@ -270,22 +236,31 @@ def main():
     file_txt = glob.glob(os.path.join(cartella_queries, "*.txt"))
     print(f"Trovati {len(file_txt)} file .txt nella cartella 'queries'")
 
+    # Crea una lista vuota per raccogliere tutti i risultati
+    tutti_risultati = []
+
     # per ogni file trovato...
     for path_file in file_txt:
-        
         nome_file = os.path.basename(path_file)
-        output_path = "fromOSM.json"
-
+        
         try:
             print(f"Eseguo query da: {nome_file}")
             query = carica_query_da_file(path_file)  # carico query dai file
             risultato_query_in_json = esegui_query_overpass(query) # eseguo la query
-            risultato = parsa_dati(risultato_query_in_json) # parso i dati in base alla tipologia e alla disabilità
-            salva_json(os.path.join(cartella_risultati, output_path), risultato)       # salvo il risultato
-            print(f"✅ Salvato: {output_path}")
+            risultati_parziali = parsa_dati(risultato_query_in_json) # parso i dati
+            
+            # Aggiungo i risultati parziali all'array principale
+            tutti_risultati.extend(risultati_parziali)
+            
+            print(f"✅ Elaborato: {nome_file} - Aggiunti {len(risultati_parziali)} elementi")
         except Exception as e:
             print(f"❌ Errore con {nome_file}: {e}")
             exit(-1)
+    
+    # Alla fine, salvo un unico file JSON con tutti i risultati
+    output_path = os.path.join(cartella_risultati, "fromOSM.json")
+    salva_json(output_path, tutti_risultati)
+    print(f"✅ Salvato file unico: {output_path} con {len(tutti_risultati)} elementi totali")
 
 if __name__ == "__main__":
     main()

@@ -1,11 +1,15 @@
 # Seconda Versione: Segnalazione di Elementi per l'Accessibilità
 
+In generale si punta ad una approccio più semi-automatico, togliendo in parte il lungo processo di selezione del percorso via iterazioni. 
+Opto più per una proposta di vari percorsi dai quali l'utente va a selezionare il migliore a seconda delle sue preferenze.
+
 **Nuove Funzionalità:**
 
 - **Autore e Ranking:** Ogni elemento (facilitatore o barriera) ora è associato a un autore e possiede un ranking.
 - **Classificazione e Disabilità:** Gli elementi sono pre-classificati come facilitatori o barriere e sono collegati a specifiche disabilità.
 - **Provenienza:** Un elemento può essere creato direttamente da un utente o estratto da OpenStreetMap (OSM).
 - **Descrizione:** Ogni elemento include una descrizione fornita dall'utente creatore o estratta da OSM.
+- **Multi-Percorso:** All'utente si presentano più percorsi da cui scegliere.
 
 ### Feedback Utente
 
