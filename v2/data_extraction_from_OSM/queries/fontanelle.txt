@@ -1,0 +1,11 @@
+[out:json];
+
+relation(44915) -> .milano;
+.milano map_to_area -> .areaMilano;
+
+(
+  nwr(area.areaMilano)["amenity"="bench"];
+  nwr(around.milano:1500)["amenity"="bench"];
+) -> .risultato;
+
+.risultato out center;

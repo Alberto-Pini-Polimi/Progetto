@@ -192,8 +192,13 @@ def estrai_coordinate(elementoOSM):
 
     # altrimenti è una way o una relation e quindi:
     if latitudine is None or longitudine is None:
-        latitudine = elementoOSM["center"].get("lat")
-        longitudine = elementoOSM["center"].get("lon")
+        if elementoOSM.get("center") is not None:
+            latitudine = elementoOSM["center"].get("lat")
+            longitudine = elementoOSM["center"].get("lon")
+        else:
+            print("non si riescono a trovare le coordinate per:")
+            print(elementoOSM)
+            exit(-1)
 
     return {
         "longitudine": longitudine,
@@ -253,7 +258,7 @@ def main():
         nome_file = os.path.basename(path_file)
         
         try:
-            print(f"Eseguo query da: {nome_file}")
+            print(f"\nEseguo query da: {nome_file}")
             query = carica_query_da_file(path_file)  # carico query dai file
             risultato_query_in_json = esegui_query_overpass(query) # eseguo la query
             risultati_parziali = parsa_dati(risultato_query_in_json) # parso i dati
@@ -269,7 +274,7 @@ def main():
     # Alla fine, salvo un unico file JSON con tutti i risultati
     output_path = os.path.join(cartella_risultati, "fromOSM.json")
     salva_json(output_path, tutti_risultati)
-    print(f"✅ Salvato file unico: {output_path} con {len(tutti_risultati)} elementi totali")
+    print(f"\n\n✅ Salvato file unico: {output_path} con {len(tutti_risultati)} elementi totali")
 
 if __name__ == "__main__":
     main()
