@@ -50,13 +50,6 @@ class TipoElemento(Enum):
         return self.value
 
 
-
-
-
-
-
-
-
 # input principali da parte dell'utente
 ORS_API_KEY = open("API_KEY.txt", 'r').read().strip()
 
@@ -67,8 +60,15 @@ PROBLEMATICA_UTENTE = ProblemiMobilità.MOTORIA
 #COORDINATE_FINE = [45.46952050871136, 9.180556820875562] # castello Sforzesco
 
 # percorso LUNGO
-COORDINATE_INIZIO = [45.47686209277475, 9.122741092267772] # san Siro
-COORDINATE_FINE = [45.45447977998694, 9.21002802045689] # piazzale libia
+#COORDINATE_INIZIO = [45.47686209277475, 9.122741092267772] # san Siro
+#COORDINATE_FINE = [45.45447977998694, 9.21002802045689] # piazzale libia
+
+# altro percorso
+#COORDINATE_INIZIO = [45.4574769358078, 9.166137110591368] # parco Don Luigi Giussani
+#COORDINATE_FINE = [45.47369617989732, 9.203759327498373] # planetario
+
+COORDINATE_INIZIO = [45.43316993192978, 9.158379520641018] # parco Don Luigi Giussani
+COORDINATE_FINE = [45.46069914927452, 9.215797267672631] # planetario
 
 COORDINATE_INIZIO = [round(COORDINATE_INIZIO[1], 6), round(COORDINATE_INIZIO[0], 6)]
 COORDINATE_FINE = [round(COORDINATE_FINE[1], 6), round(COORDINATE_FINE[0], 6)]
@@ -83,11 +83,6 @@ BUFFER_ATTORNO_AL_QUALE_SI_CREA_UNA_ZONA_PROIBITA_IN_METRI = 15
 
 
 
-
-
-
-
-
 # Definisci i sistemi di coordinate e le funzioni per la trasformazione tra i sistemi
 wgs84 = 'EPSG:4326' # Sistema di coordinate geografiche (lat/lon)
 utm_zone = 'EPSG:32632' # Proiezione UTM adatta (Milano nella zona UTM 32N)
@@ -96,15 +91,6 @@ project_to_wgs = Transformer.from_crs(utm_zone, wgs84, always_xy=True).transform
 
 def inverti_coordinate(coord):
     return coord[1], coord[0]
-
-
-
-
-
-
-
-
-
 
 
 
@@ -135,7 +121,9 @@ class Utente():
 
         # vedo se un elemento è pertinente e poi ritorno True solo in base al ranking (nient'altro che un valore di priorità)
         if str(self.problema) in barriera_per or  str(self.problema) in facilitatore_per or str(self.problema) in infrastruttura_per:
-            return elemento.get("ranking") >= random.randint(0, 100)
+            if elemento.get("autore") == self.nickname: # se l'elemento è inerente ed è stato creato dall'utente
+                return True # allora lo includo poiché sicuramente per lui è interessante (dato che è stato lui a crearlo)
+            return elemento.get("ranking") >= random.randint(0, 100) # altrimenti ritorno True in funzione della probabilità 
 
         return False
 
@@ -176,19 +164,6 @@ class ElementoOSM:
             return TipoElemento.INFRASTRUTTURA
         else:
             return None
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class Percorso():
@@ -393,8 +368,8 @@ class MappaFolium:
         popup = folium.Popup(
             f"""
                 <h3>{elemento.nome}</h3>
-                <span>{elemento.descrizione}<\span>
-                <a href="{sv_url}">Immagine Street View</a>
+                Descrizione: {elemento.descrizione}<br>
+                <a href="{sv_url}">Immagine Street View</a><br>
                 ID: {elemento.id}
             """,
             max_width=300
@@ -466,13 +441,6 @@ def creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_fi
     return
 
 
-
-
-
-
-
-
-
 # caricare elementi da file JSON
 
 def caricaElementiDaJSON(directory_risultati, bbox, utente):
@@ -523,14 +491,6 @@ def caricaElementiDaJSON(directory_risultati, bbox, utente):
     print(f"{len(elementi)} trovati!")
 
     return elementi # Ritorna quindi tutti gli elementi parsati
-
-
-
-
-
-
-
-
 
 
 
@@ -632,105 +592,6 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
         exit(-1)
 
 
-def mostraBarriereEFacilitatori(barriere, facilitatori):
-    """
-    Mostra le barriere e i facilitatori trovati e consente all'utente di selezionare quali evitare/includere
-    
-    Args:
-        barriere: lista di oggetti Barriera
-        facilitatori: lista di oggetti Facilitatore
-    
-    Returns:
-        tuple (barriere_da_evitare, facilitatori_da_includere)
-    """
-    if not barriere:
-        print("\nNessuna barriera trovata sul percorso.")
-    else:
-        print(f"\n========== BARRIERE TROVATE ({len(barriere)}) ==========")
-        for i, barriera in enumerate(barriere):
-            descrizione = f"Tipo: {barriera.tipo}"
-            for key, value in barriera.tags.items():
-                if key in ['description', 'note', 'name', 'wheelchair', 'tactile_paving', 'kerb', 'surface']:
-                    descrizione += f", {key}: {value}"
-            print(f"{i+1}. {barriera} - {descrizione}")
-    
-    if not facilitatori:
-        print("\nNessun facilitatore trovato sul percorso.")
-    else:
-        print(f"\n========== FACILITATORI TROVATI ({len(facilitatori)}) ==========")
-        for i, facilitatore in enumerate(facilitatori):
-            descrizione = f"Tipo: {facilitatore.tipo}"
-            for key, value in facilitatore.tags.items():
-                if key in ['description', 'note', 'name', 'wheelchair', 'tactile_paving']:
-                    descrizione += f", {key}: {value}"
-            print(f"{i+1}. {facilitatore} - {descrizione}")
-    
-    # In un'applicazione reale, qui mostreremmo le immagini e consentiremmo la selezione
-    barriere_da_evitare = []
-    if barriere:
-        print("\nSeleziona i numeri delle barriere che vuoi evitare (separati da virgola) (Enter per nessuna):")
-        input_barriere = input("> ")
-        
-        if input_barriere.strip():
-            try:
-                indici = [int(idx.strip()) - 1 for idx in input_barriere.split(",")]
-                barriere_da_evitare = [barriere[idx] for idx in indici if 0 <= idx < len(barriere)]
-                if len(barriere_da_evitare) != len(indici):
-                    print("Alcuni indici non validi sono stati ignorati.")
-            except ValueError:
-                print("Input non valido. Nessuna barriera evitata.")
-    
-    facilitatori_da_includere = []
-    if facilitatori:
-        print("\nSeleziona i numeri dei facilitatori che vuoi includere (separati da virgola) (Enter per nessuno):")
-        input_facilitatori = input("> ")
-        
-        if input_facilitatori.strip():
-            try:
-                indici = [int(idx.strip()) - 1 for idx in input_facilitatori.split(",")]
-                facilitatori_da_includere = [facilitatori[idx] for idx in indici if 0 <= idx < len(facilitatori)]
-                if len(facilitatori_da_includere) != len(indici):
-                    print("Alcuni indici non validi sono stati ignorati.")
-            except ValueError:
-                print("Input non valido. Nessun facilitatore selezionato.")
-    
-    return barriere_da_evitare, facilitatori_da_includere
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 def main():
 
@@ -766,14 +627,7 @@ def main():
     # creo la mappa col percorso e tutto il resto
     creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, "mappa_più_veloce.html")
 
-
-
-
     tutte_barriere_da_evitare = barriere
-
-    
-
-
 
     # ora calcola automaticamente la mappa senza le barriere che l'utente non vuole 
     #barriere_che_lo_user_sicuramente_vuole_rimuovere = utente.
@@ -806,10 +660,6 @@ def main():
 
 
 
-
-
-
-
     # prova a fare un altro percorso togliendo tutte le barriere della bbox
 
     tutte_barriere_da_evitare = []
@@ -822,207 +672,6 @@ def main():
 
     creaEDisegnaMappa(percorsoSenzaBarriereDellaBbox, barriere, facilitatori, infrastrutture, "mappa_senza_barriere_della_bbox.html")
 
-
-
-    # poi faccio il ranking
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # # Tracciamento di tutte le scelte dell'utente nelle varie iterazioni
-    # tutte_barriere_da_evitare = []  # Lista di tutte le barriere selezionate finora
-    # tutti_facilitatori_da_includere = []  # Lista di tutti i facilitatori selezionati finora
-    
-    # # Memorizza gli ID per evitare duplicati
-    # id_barriere_selezionate = set()
-    # id_facilitatori_selezionati = set()
-
-
-
-
-    # # Ciclo di ottimizzazione del percorso
-    # utente_soddisfatto = False
-    # iterazione = 1
-    # while not utente_soddisfatto: # finche l'utente non è soddisfatto
-        
-    #     print(f"\n===== ITERAZIONE {iterazione} =====")
-        
-    #     # Trova barriere e facilitatori sul percorso attuale
-    #     print(f"Cercando barriere e facilitatori per utente con disabilità: {utente.name}...")
-    #     barriere, facilitatori = percorso.trovaElementiSulPercorso(utente, elementi_osm)
-    #     print(f"Trovate {len(barriere)} barriere e {len(facilitatori)} facilitatori sul percorso.")
-        
-        # # Crea la mappa
-        # centro_percorso = percorso.percorso_geo.centroid
-        # mappa = MappaFolium(centro=(centro_percorso.y, centro_percorso.x))
-        
-        # # Aggiungi il percorso
-        # mappa.aggiungiPolyline(percorso.coordinate_della_polyline)
-        
-        # # Aggiungi il buffer barriere
-        # mappa.aggiungiPoligono(
-        #     [(y, x) for x, y in percorso.bufferBarriere_geo.exterior.coords],
-        #     tooltip='Area di ricerca barriere',
-        #     colore='orange'
-        # )
-        # # Aggiungi il buffer facilitatori
-        # mappa.aggiungiPoligono(
-        #     [(y, x) for x, y in percorso.bufferFacilitatori_geo.exterior.coords],
-        #     tooltip='Area di ricerca facilitatori',
-        #     colore='lightgreen'
-        # )
-
-        # # Aggiungi le barriere
-        # for barriera in barriere:
-        #     evidenziato = barriera.id in id_barriere_selezionate
-        #     mappa.aggiungiElemento(barriera, evidenzia=evidenziato)
-        
-        # # Aggiungi i facilitatori
-        # for facilitatore in facilitatori:
-        #     evidenziato = facilitatore.id in id_facilitatori_selezionati
-        #     mappa.aggiungiElemento(facilitatore, evidenzia=evidenziato)
-        
-        # # Salva la mappa sovrascrivendo quella precedente
-        # mappa.salvaMappa(mappa_file)
-        # print(f"Mappa del percorso salvata in: {mappa_file}")
-        # webbrowser.open('file://' + os.path.realpath(mappa_file))
-        
-    #     # Mostra le scelte precedenti all'utente
-    #     if tutte_barriere_da_evitare:
-    #         print("\n--- Barriere precedentemente selezionate da evitare ---")
-    #         for i, barriera in enumerate(tutte_barriere_da_evitare):
-    #             print(f"{i+1}. {barriera} - Tipo: {barriera.tipo}")
-        
-    #     if tutti_facilitatori_da_includere:
-    #         print("\n--- Facilitatori precedentemente selezionati da includere ---")
-    #         for i, facilitatore in enumerate(tutti_facilitatori_da_includere):
-    #             print(f"{i+1}. {facilitatore} - Tipo: {facilitatore.tipo}")
-        
-    #     # Mostra le nuove barriere e facilitatori all'utente e chiedi quali evitare/includere
-    #     nuove_barriere_da_evitare, nuovi_facilitatori_da_includere = mostraBarriereEFacilitatori(barriere, facilitatori)
-        
-    #     # Se l'utente non ha selezionato né barriere da evitare né facilitatori da includere, 
-    #     # termina il ciclo di ottimizzazione
-    #     if not nuove_barriere_da_evitare and not nuovi_facilitatori_da_includere:
-    #         print("\nNessuna nuova barriera da evitare o facilitatore da includere.")
-    #         print("Percorso definitivo confermato!")
-    #         utente_soddisfatto = True
-    #         continue
-        
-    #     # Aggiungi le nuove scelte alle liste complessive, evitando duplicati
-    #     for barriera in nuove_barriere_da_evitare:
-    #         if barriera.id not in id_barriere_selezionate:
-    #             tutte_barriere_da_evitare.append(barriera)
-    #             id_barriere_selezionate.add(barriera.id)
-        
-    #     for facilitatore in nuovi_facilitatori_da_includere:
-    #         if facilitatore.id not in id_facilitatori_selezionati:
-    #             tutti_facilitatori_da_includere.append(facilitatore)
-    #             id_facilitatori_selezionati.add(facilitatore.id)
-        
-    #     # Ricalcola il percorso con TUTTE le preferenze dell'utente fino ad ora
-    #     print("\nRicalcolo del percorso in base a tutte le scelte accumulate...")
-        
-    #     # Prepara poligoni da evitare per tutte le barriere selezionate
-    #     aree_da_evitare = []
-    #     for barriera in tutte_barriere_da_evitare:
-    #         centroide = barriera.trovaCoordinateCentroide()
-    #         # Proietta il punto in UTM
-    #         punto_utm = project_to_utm(centroide[0], centroide[1])
-    #         # Crea un buffer in metri intorno alla barriera (es. 20 metri) e riproiettalo in WGS84
-    #         cerchio_utm = Point(punto_utm).buffer(BUFFER_FACILITATORI_IN_METRI)
-    #         cerchio_coords = [project_to_wgs(x, y) for x, y in cerchio_utm.exterior.coords]
-    #         aree_da_evitare.append(Polygon(cerchio_coords))
-        
-    #     # Prepara waypoints da includere per tutti i facilitatori selezionati
-    #     waypoints = []
-    #     for facilitatore in tutti_facilitatori_da_includere:
-    #         centroide = facilitatore.trovaCoordinateCentroide()
-    #         waypoints.append((centroide[1], centroide[0]))  # Inverte in [lat, lon] per ORS
-        
-    #     # Ricalcola il percorso
-    #     nuovo_encoded_polyline = calcolaPercorsoConORS(
-    #         inizio, 
-    #         fine,
-    #         aree_da_evitare if aree_da_evitare else None, 
-    #         waypoints if waypoints else None
-    #     )
-        
-    #     if nuovo_encoded_polyline:
-    #         percorso = Percorso(nuovo_encoded_polyline)
-    #         print("Percorso ricalcolato con successo!")
-    #     else:
-    #         print("Errore nel ricalcolo del percorso. Utilizzo percorso precedente.")
-    #         print("Prova a fare scelte diverse nella prossima iterazione.")
-        
-    #     iterazione += 1
-    
-    # # Visualizza il percorso finale
-    # barriere_finali, facilitatori_finali = percorso.trovaElementiSulPercorso(utente, elementi_osm)
-    
-    # # Crea la mappa finale
-    # centro_percorso = percorso.percorso_geo.centroid
-    # mappa_finale = MappaFolium(centro=(centro_percorso.y, centro_percorso.x))
-    
-    # # Aggiungi il percorso
-    # mappa_finale.aggiungiPolyline(percorso.coordinate_della_polyline)
-    
-    # # Aggiungi il buffer barriere
-    # mappa.aggiungiPoligono(
-    #     [(y, x) for x, y in percorso.bufferBarriere_geo.exterior.coords],
-    #     tooltip='Area di ricerca barriere',
-    #     colore='orange'
-    # )
-    # # Aggiungi il buffer facilitatori
-    # mappa.aggiungiPoligono(
-    #     [(y, x) for x, y in percorso.bufferFacilitatori_geo.exterior.coords],
-    #     tooltip='Area di ricerca facilitatori',
-    #     colore='lightgreen'
-    # )
-    
-    # # Aggiungi le barriere
-    # for barriera in barriere_finali:
-    #     evidenziata = barriera.id in id_barriere_selezionate
-    #     mappa_finale.aggiungiElemento(barriera, evidenzia=evidenziata)
-    
-    # # Aggiungi i facilitatori
-    # for facilitatore in facilitatori_finali:
-    #     evidenziato = facilitatore.id in id_facilitatori_selezionati
-    #     mappa_finale.aggiungiElemento(facilitatore, evidenzia=evidenziato)
-    
-    # # Salva la mappa finale
-    # mappa_finale.salvaMappa(mappa_file)
-    # print(f"\nPercorso finale salvato in: {mappa_file}")
-    # webbrowser.open('file://' + os.path.realpath(mappa_file))
-    
-    # # Riepilogo di tutte le scelte dell'utente
-    # print("\n===== RIEPILOGO DELLE SCELTE =====")
-    # print(f"Barriere da evitare ({len(tutte_barriere_da_evitare)}):")
-    # for i, barriera in enumerate(tutte_barriere_da_evitare):
-    #     print(f"{i+1}. {barriera} - Tipo: {barriera.tipo}")
-    
-    # print(f"\nFacilitatori da includere ({len(tutti_facilitatori_da_includere)}):")
-    # for i, facilitatore in enumerate(tutti_facilitatori_da_includere):
-    #     print(f"{i+1}. {facilitatore} - Tipo: {facilitatore.tipo}")
-    
-    # print("\nAnalisi del percorso completata!")
 
 if __name__ == "__main__":
     main()
