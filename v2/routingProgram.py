@@ -381,11 +381,14 @@ class MappaFolium:
         
         punto = (elemento.coordinate_centroide.get("latitudine"), elemento.coordinate_centroide.get("longitudine"))
         
+        # Costruisci l'URL di Street View utilizzando le coordinate
+        sv_url = f"https://www.google.com/maps?layer=c&cbll={punto[0]},{punto[1]}"
+
         popup = folium.Popup(
             f"""
                 <h3>{elemento.nome}</h3>
-                <p>{elemento.descrizione}<\p>
-                <br>
+                <span>{elemento.descrizione}<\span>
+                <a href="{sv_url}">Immagine Street View</a>
                 ID: {elemento.id}
             """,
             max_width=300
