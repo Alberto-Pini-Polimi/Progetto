@@ -221,7 +221,7 @@ def parsa_dati(risultatoQueryOSM):
         dati_parsati.append(
             {
                 "id": str(uuid.uuid4()),  # Converto direttamente UUID in stringa
-                "barreiraPer": disabilitàPerCuiFungeDaBarriera,
+                "barrieraPer": disabilitàPerCuiFungeDaBarriera,
                 "facilitatorePer": disabilitàPerCuiFungeDaFacilitatore,
                 "infrastrutturaPer": disabilitàPerCuiFungeDaInfrastruttura,
                 "autore": "OSM",
