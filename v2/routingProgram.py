@@ -9,6 +9,7 @@ from pyproj import Transformer
 from enum import Enum
 import webbrowser
 from datetime import datetime
+import random
 
 
 class ProblemiMobilità(Enum):
@@ -109,28 +110,33 @@ def inverti_coordinate(coord):
 
 class Utente():
 
-    def __init__(self, nickname, problema_di_mobilità):
+    def __init__(self, nickname, problema_di_mobilità, tipologia_di_elemento_da_includere_sempre=None, tipologia_di_elemento_da_evitare_sempre=None):
         
         self.nickname = nickname # dev'essere univoco
         self.problema = problema_di_mobilità
-        self.preferenze = None # qui si esprimono le preferenze dell'utente
+        self.tipologia_di_elemento_da_includere_sempre = tipologia_di_elemento_da_includere_sempre if tipologia_di_elemento_da_includere_sempre else []
+        self.tipologia_di_elemento_da_evitare_sempre = tipologia_di_elemento_da_evitare_sempre if tipologia_di_elemento_da_evitare_sempre else []
 
     def interessa(self, elemento):
         """
             Metodo per capire se un elemento è utile per l'utente in questione
         """
 
+        name_elemento = elemento.get("name")
+
+        if name_elemento in self.tipologia_di_elemento_da_includere_sempre:
+            return True
+        if name_elemento in self.tipologia_di_elemento_da_evitare_sempre:
+            return False
+
         barriera_per = elemento.get("barrieraPer", [])
         facilitatore_per = elemento.get("facilitatorePer", [])
         infrastruttura_per = elemento.get("infrastrutturaPer", [])
 
-        if str(self.problema) in barriera_per:
-            return True
-        if str(self.problema) in facilitatore_per:
-            return True
-        if str(self.problema) in infrastruttura_per:
-            return True
-        
+        # vedo se un elemento è pertinente e poi ritorno True solo in base al ranking (nient'altro che un valore di priorità)
+        if str(self.problema) in barriera_per or  str(self.problema) in facilitatore_per or str(self.problema) in infrastruttura_per:
+            return elemento.get("ranking") >= random.randint(0, 100)
+
         return False
 
 
