@@ -10,50 +10,6 @@ from enum import Enum
 import webbrowser
 from datetime import datetime
 
-# input principali da parte dell'utente
-ORS_API_KEY = open("API_KEY.txt", 'r').read().strip()
-
-COORDINATE_INIZIO = [9.17988, 45.47006]  # [lon, lat] castello sforzesco
-#COORDINATE_FINE = [9.18956, 45.46424]    # [lon, lat] duomo
-#COORDINATE_FINE = [9.203530, 45.485146] # centrale
-COORDINATE_FINE = [9.226897, 45.478111] # piazza leo
-
-# COORDINATE_INIZIO = [46.538795718940136, 12.124246397899869] 
-# COORDINATE_FINE = [46.53569202884132, 12.1411393835463]
-
-# COORDINATE_INIZIO = [round(COORDINATE_INIZIO[1], 6), round(COORDINATE_INIZIO[0], 6)]
-# COORDINATE_FINE = [round(COORDINATE_FINE[1], 6), round(COORDINATE_FINE[0], 6)]
-
-# L'istanza dell'utente è definita sotto nel main
-
-# definisco un'area di distanza attorno ai percorsi
-BUFFER_FACILITATORI_IN_METRI = 10
-BUFFER_BARRIERE_IN_METRI = 3
-BUFFER_INFRASTRUTTURE_IN_METRI = 50
-
-
-
-
-
-
-
-
-
-# Definisci i sistemi di coordinate e le funzioni per la trasformazione tra i sistemi
-wgs84 = 'EPSG:4326' # Sistema di coordinate geografiche (lat/lon)
-utm_zone = 'EPSG:32632' # Proiezione UTM adatta (Milano nella zona UTM 32N)
-project_to_utm = Transformer.from_crs(wgs84, utm_zone, always_xy=True).transform
-project_to_wgs = Transformer.from_crs(utm_zone, wgs84, always_xy=True).transform
-
-def inverti_coordinate(coord):
-    return coord[1], coord[0]
-
-
-
-
-
-
-
 
 class ProblemiMobilità(Enum):
 
@@ -93,6 +49,64 @@ class TipoElemento(Enum):
         return self.value
 
 
+
+
+
+
+
+
+
+# input principali da parte dell'utente
+ORS_API_KEY = open("API_KEY.txt", 'r').read().strip()
+
+PROBLEMATICA_UTENTE = ProblemiMobilità.MOTORIA
+
+# percorso CORTO
+#COORDINATE_INIZIO = [45.484916762291135, 9.19188606022059] # Gae Aulenti
+#COORDINATE_FINE = [45.46952050871136, 9.180556820875562] # castello Sforzesco
+
+# percorso LUNGO
+COORDINATE_INIZIO = [45.47686209277475, 9.122741092267772] # san Siro
+COORDINATE_FINE = [45.45447977998694, 9.21002802045689] # piazzale libia
+
+COORDINATE_INIZIO = [round(COORDINATE_INIZIO[1], 6), round(COORDINATE_INIZIO[0], 6)]
+COORDINATE_FINE = [round(COORDINATE_FINE[1], 6), round(COORDINATE_FINE[0], 6)]
+
+# L'istanza dell'utente è definita sotto nel main
+
+# definisco un'area di distanza attorno ai percorsi
+BUFFER_FACILITATORI_IN_METRI = 10
+BUFFER_BARRIERE_IN_METRI = 3
+BUFFER_INFRASTRUTTURE_IN_METRI = 50
+BUFFER_ATTORNO_AL_QUALE_SI_CREA_UNA_ZONA_PROIBITA_IN_METRI = 15
+
+
+
+
+
+
+
+
+# Definisci i sistemi di coordinate e le funzioni per la trasformazione tra i sistemi
+wgs84 = 'EPSG:4326' # Sistema di coordinate geografiche (lat/lon)
+utm_zone = 'EPSG:32632' # Proiezione UTM adatta (Milano nella zona UTM 32N)
+project_to_utm = Transformer.from_crs(wgs84, utm_zone, always_xy=True).transform
+project_to_wgs = Transformer.from_crs(utm_zone, wgs84, always_xy=True).transform
+
+def inverti_coordinate(coord):
+    return coord[1], coord[0]
+
+
+
+
+
+
+
+
+
+
+
+
 class Utente():
 
     def __init__(self, nickname, problema_di_mobilità):
@@ -106,11 +120,11 @@ class Utente():
             Metodo per capire se un elemento è utile per l'utente in questione
         """
 
-        barreira_per = elemento.get("barreiraPer", [])
+        barriera_per = elemento.get("barrieraPer", [])
         facilitatore_per = elemento.get("facilitatorePer", [])
         infrastruttura_per = elemento.get("infrastrutturaPer", [])
 
-        if str(self.problema) in barreira_per:
+        if str(self.problema) in barriera_per:
             return True
         if str(self.problema) in facilitatore_per:
             return True
@@ -132,7 +146,7 @@ class ElementoOSM:
         self.ranking = elemento_del_DB["ranking"]
         self.nome = elemento_del_DB["nome"]
         self.descrizione = elemento_del_DB["descrizione"]
-        self.barreira_per = elemento_del_DB["barreiraPer"] 
+        self.barriera_per = elemento_del_DB["barrieraPer"] 
         self.facilitatore_per = elemento_del_DB["facilitatorePer"] 
         self.infrastruttura_per = elemento_del_DB["infrastrutturaPer"] 
 
@@ -148,7 +162,7 @@ class ElementoOSM:
 
     def per(self, utente):
 
-        if utente.problema.value in self.barreira_per:
+        if utente.problema.value in self.barriera_per:
             return TipoElemento.BARRIERA
         elif utente.problema.value in self.facilitatore_per:
             return TipoElemento.FACILITATORE
@@ -514,7 +528,7 @@ def caricaElementiDaJSON(directory_risultati, bbox, utente):
 
 # chiamata all'API di OpenRouteService per calcolare i percorsi
 
-def chiamataAPIdiORS(inizio, fine, aree_da_evitare=None, waypoints=None):
+def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, preferenza="fastest"):
     """
     Calcola uno o più percorsi pedonale usando OpenRouteService
     
@@ -522,7 +536,7 @@ def chiamataAPIdiORS(inizio, fine, aree_da_evitare=None, waypoints=None):
         inizio: lista [lon, lat]
         fine: lista [lon, lat]
         headers: headers per l'API ORS
-        aree_da_evitare: lista di poligoni da evitare (opzionale)
+        aree_da_evitare: lista di elementiOSM da evitare (opzionale)
         waypoints: lista di waypoints [lat, lon] da includere nel percorso successivamente selezionato (opzionale)
     
     Returns:
@@ -555,18 +569,35 @@ def chiamataAPIdiORS(inizio, fine, aree_da_evitare=None, waypoints=None):
         "coordinates": coordinates,
         "instructions": False,
         "profile": "foot-walking",
-        "format": "geojson"
+        "format": "geojson",
+        "preference": preferenza
     }
     
-    # Aggiungi le aree da evitare se presenti
-    if aree_da_evitare and len(aree_da_evitare) > 0:
-        try:
-            body["options"] = {
-                "avoid_polygons": geometry.mapping(MultiPolygon(aree_da_evitare))
-            }
-        except Exception as e:
-            print(f"Errore nella creazione dei poligoni da evitare: {e}")
-            # Continua senza aree da evitare
+    # converto ogni elemento da evitare in un array di poligoni da evitare
+    if elementi_da_evitare:
+        poligoni_da_evitare = []
+        for elemento_da_evitare in elementi_da_evitare:
+            # Ottieni il centroide dell'elemento
+            lon = elemento_da_evitare.coordinate_centroide["longitudine"]
+            lat = elemento_da_evitare.coordinate_centroide["latitudine"]
+            # Proietta il punto in UTM
+            punto_utm = project_to_utm(lon, lat)
+            # Crea un buffer in metri attorno al punto (ad esempio 10m)
+            buffer_utm = Point(punto_utm).buffer(BUFFER_ATTORNO_AL_QUALE_SI_CREA_UNA_ZONA_PROIBITA_IN_METRI)
+            # Riproietta il buffer in WGS84
+            buffer_wgs84_coords = [project_to_wgs(x, y) for x, y in buffer_utm.exterior.coords]
+            poligono = Polygon(buffer_wgs84_coords)
+            poligoni_da_evitare.append(poligono)
+
+
+        if len(poligoni_da_evitare) > 0:
+            try:
+                body["options"] = {
+                    "avoid_polygons": geometry.mapping(MultiPolygon(poligoni_da_evitare))
+                }
+            except Exception as e:
+                print(f"Errore nella creazione dei poligoni da evitare: {e}")
+                # Continua senza aree da evitare
     
     # Faccio la call a ORS
     try:    
@@ -586,10 +617,10 @@ def chiamataAPIdiORS(inizio, fine, aree_da_evitare=None, waypoints=None):
             print("Chiave API non valida o mancante")
         elif call.status_code == 403:
             print("Accesso negato")
-        return None
+        exit(-1)
     except Exception as e:
         print(f"Errore nel calcolo del percorso: {e}")
-        return None
+        exit(-1)
 
 
 def mostraBarriereEFacilitatori(barriere, facilitatori):
@@ -695,59 +726,96 @@ def mostraBarriereEFacilitatori(barriere, facilitatori):
 def main():
 
     # ------------ Impostazioni ------------
-    headers = {
-        'Authorization': ORS_API_KEY
-    }
     directory_risultati = "data"  # Directory dove sono salvati i risultati delle query Overpass
-    file_della_mappa = "mappa_percorso.html"  # Nome fisso per il file della mappa
+    #file_della_mappa = "mappa_percorso.html"  # Nome fisso per il file della mappa
 
     # ------------ dati di input ------------
-    utente = Utente("firstUserEver", ProblemiMobilità.VISIVA)
+    utente = Utente("firstUserEver", PROBLEMATICA_UTENTE)
     # per inserire coordinate di inizio e fine
     inizio = COORDINATE_INIZIO
     fine = COORDINATE_FINE
 
-    
-    
     # ------------ calcolo iniziale del percorso ------------
-    print(f"Calcolo percorso pedonale da {inizio} a {fine}...")
-    results = chiamataAPIdiORS(inizio, fine)
-    # errori eventuali
-    if not results:
-        print("Impossibile calcolare il percorso. Verifica coordinate o connessione internet.")
-        return
-
-    # Crea l'oggetto percorso
+    print(f"Calcolo percorso da {inizio} a {fine}...")
+    results = chiamataAPIdiORS(inizio, fine) # quello calcolato è il percorso di default ed anche il più veloce
+    # e creazione l'oggetto percorso
     percorso = Percorso(results[0])
     
-
     # ------------ caricamento dati ------------
     print("\nCaricamento dati da file JSON...")
     elementi_osm_personalizzati = caricaElementiDaJSON(directory_risultati, percorso.bbox, utente) # qua carico tutti gli elementi 
-    print(f"\nCaricati {len(elementi_osm_personalizzati)} elementi all'interno della bbox del percoso calcolato")   # a prescindere dalla vicinanza al percorso
-    # questi elementi_osm sono già stati estratti considerando l'utente che li ha richiesti e la bbox del percorso
+    print(f"\nCaricati {len(elementi_osm_personalizzati)} elementi all'interno della bbox del percoso calcolato") # a prescindere dalla vicinanza al percorso
+    # questi elementi_osm sono già stati estratti considerando l'utente che li ha richiesti e la bbox del percorso (carico in memoria solo gli elementi necessari)
 
-
-
-
-
-    # parto col primo percorso e lo visualizzo:
-
+    # ------------ selezione dati caricati ------------
+    # dagli elementi estratti trovo quelli rientranti nei buffer del percorso separandoli fra barriere, facilitatori ed infrastrutture
     print(f"\nCercando barriere e facilitatori per utente {utente.nickname} con disabilità: {utente.problema} lungo il percorso di default")
     barriere, facilitatori, infrastrutture = percorso.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
     print(f"Risultato:\n - {len(barriere)} barriere\n - {len(facilitatori)} facilitatori\n - {len(infrastrutture)} infrastrutture\ntrovati sul percorso")
 
-
-    creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, file_della_mappa)
-
-
-
+    # ------------ disegno percorso di default ------------
+    # creo la mappa col percorso e tutto il resto
+    creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, "mappa_più_veloce.html")
 
 
 
 
+    tutte_barriere_da_evitare = barriere
+
+    
 
 
+
+    # ora calcola automaticamente la mappa senza le barriere che l'utente non vuole 
+    #barriere_che_lo_user_sicuramente_vuole_rimuovere = utente.
+
+
+    # provo a fare un percorso togliendo tutte le barriere che incontro sulla via
+    percorsoSenzaBarriere = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
+    barriere, facilitatori, infrastrutture = percorsoSenzaBarriere.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
+    
+    
+    for barriera in barriere:
+        tutte_barriere_da_evitare.append(barriera)
+
+    percorsoSenzaBarriere = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
+    barriere, facilitatori, infrastrutture = percorsoSenzaBarriere.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
+
+    for barriera in barriere:
+        tutte_barriere_da_evitare.append(barriera)
+
+    percorsoSenzaBarriere = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
+    barriere, facilitatori, infrastrutture = percorsoSenzaBarriere.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
+
+    for barriera in barriere:
+        tutte_barriere_da_evitare.append(barriera)
+
+    percorsoSenzaBarriere = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
+    barriere, facilitatori, infrastrutture = percorsoSenzaBarriere.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
+
+    creaEDisegnaMappa(percorsoSenzaBarriere, barriere, facilitatori, infrastrutture, "mappa_senza_barriere.html")
+
+
+
+
+
+
+
+    # prova a fare un altro percorso togliendo tutte le barriere della bbox
+
+    tutte_barriere_da_evitare = []
+    for elemento_osm in elementi_osm_personalizzati:
+        if elemento_osm.per(utente) == TipoElemento.BARRIERA:
+            tutte_barriere_da_evitare.append(elemento_osm) # prendo tutte le barriere per l'utente nella bbox
+
+    percorsoSenzaBarriereDellaBbox = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
+    barriere, facilitatori, infrastrutture = percorsoSenzaBarriereDellaBbox.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
+
+    creaEDisegnaMappa(percorsoSenzaBarriereDellaBbox, barriere, facilitatori, infrastrutture, "mappa_senza_barriere_della_bbox.html")
+
+
+
+    # poi faccio il ranking
 
 
 

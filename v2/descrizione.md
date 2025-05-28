@@ -9,7 +9,7 @@ Opto più per una proposta di vari percorsi dai quali l'utente va a selezionare 
 - **Classificazione e Disabilità:** Gli elementi sono pre-classificati come facilitatori o barriere e sono collegati a specifiche disabilità.
 - **Provenienza:** Un elemento può essere creato direttamente da un utente o estratto da OpenStreetMap (OSM).
 - **Descrizione:** Ogni elemento include una descrizione fornita dall'utente creatore o estratta da OSM.
-- **Multi-Percorso:** All'utente si presentano più percorsi da cui scegliere.
+- **Multi-Percorso:** All'utente si presentano più percorsi, assieme alle relative info, da cui scegliere.
 
 ### Feedback Utente
 
@@ -47,8 +47,8 @@ nella v1 i dati erano direttamente i risultati delle query di OSM, quindi meno u
     "elementi": [
         {
             "id": 1,
-            "barreiraPer": [],
-            "facilitatorePer": [],
+            "barreiraPer": [],      <-- tutti le problematiche per cui questo elemento potrebbe essere una barriera
+            "facilitatorePer": [],  <-- idem ma per i facilitatori
             "infrastrutturaPer": [],
             "autore": null,
             "ranking": 0,
@@ -63,3 +63,9 @@ nella v1 i dati erano direttamente i risultati delle query di OSM, quindi meno u
         }
     ]
 }```
+
+
+
+
+
+
