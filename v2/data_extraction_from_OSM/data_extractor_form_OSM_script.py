@@ -149,6 +149,15 @@ def classifica_dati(elementoOSM):
         comeInfrastrutturaPer.append(ProblemiMobilita.UDITIVA)
         descrizione = "Fontana per bere o riempire la borraccia."
 
+    # bar
+    elif elementoOSM["tags"].get("amenity") == "cafe" or elementoOSM["tags"].get("amenity") == "bar":
+        nome = "Bar"
+        comeInfrastrutturaPer.append(ProblemiMobilita.VISIVA)
+        comeInfrastrutturaPer.append(ProblemiMobilita.UDITIVA)
+        if elementoOSM["tags"].get("wheelchair") == "yes":
+            comeInfrastrutturaPer.append(ProblemiMobilita.MOTORIA)
+            descrizione = "Bar accessibile in sedia a rotelle"
+
     # bagno
     elif elementoOSM["tags"].get("amenity") == "toilets":
         nome = "Bagno"
@@ -156,7 +165,6 @@ def classifica_dati(elementoOSM):
             comeInfrastrutturaPer.append(ProblemiMobilita.MOTORIA)
             descrizione = "Bagno accessibile per persone con disabilità motorie."
         else:
-            comeInfrastrutturaPer.append(ProblemiMobilita.MOTORIA)
             comeInfrastrutturaPer.append(ProblemiMobilita.VISIVA)
             comeInfrastrutturaPer.append(ProblemiMobilita.UDITIVA)
             descrizione = "Bagno pubblico."
