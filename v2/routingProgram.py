@@ -67,8 +67,11 @@ PROBLEMATICA_UTENTE = ProblemiMobilità.MOTORIA
 #COORDINATE_INIZIO = [45.4574769358078, 9.166137110591368] # parco Don Luigi Giussani
 #COORDINATE_FINE = [45.47369617989732, 9.203759327498373] # planetario
 
-COORDINATE_INIZIO = [45.43316993192978, 9.158379520641018] # parco Don Luigi Giussani
-COORDINATE_FINE = [45.46069914927452, 9.215797267672631] # planetario
+#COORDINATE_INIZIO = [45.43316993192978, 9.158379520641018] # parco Don Luigi Giussani
+#COORDINATE_FINE = [45.46069914927452, 9.215797267672631] # planetario
+
+COORDINATE_INIZIO = [45.46797351580205, 9.182596260259444] # CAIROLI
+COORDINATE_FINE = [45.46420895249842, 9.18958581318816] # PIAZZA DUOMO
 
 COORDINATE_INIZIO = [round(COORDINATE_INIZIO[1], 6), round(COORDINATE_INIZIO[0], 6)]
 COORDINATE_FINE = [round(COORDINATE_FINE[1], 6), round(COORDINATE_FINE[0], 6)]
@@ -369,7 +372,7 @@ class MappaFolium:
             f"""
                 <h3>{elemento.nome}</h3>
                 Descrizione: {elemento.descrizione}<br>
-                <a href="{sv_url}">Immagine Street View</a><br>
+                <a href="{sv_url}" target="_blank" rel="noopener">Immagine Street View</a><br>
                 ID: {elemento.id}
             """,
             max_width=300
@@ -451,8 +454,8 @@ def caricaElementiDaJSON(directory_risultati, bbox, utente):
     if isinstance(utente, ProblemiMobilità):
         exit(-1)
 
+    # itero tutti i file .json contenenti i potenziali elementi da caricare in memoria
     elementi = []
-    
     for file_name in os.listdir(directory_risultati):
 
         print(f"Trovato file: {file_name}")
@@ -467,11 +470,11 @@ def caricaElementiDaJSON(directory_risultati, bbox, utente):
                     print("Vuoto, skipppo")
                     continue  # Passa al file successivo
 
+                # Carico il contenuto del file
                 try:
                     data = json.loads(contenuto)
                     # Processa i dati JSON
-                    for elemento in data: # Prende tutti gli elementi
-
+                    for elemento in data:
                         # controllo se l'elemento può essere utile per l'utente
                         if utente.interessa(elemento):
                             # controllo se rientra nella bounding box

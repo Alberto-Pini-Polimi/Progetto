@@ -42,27 +42,33 @@ Gli altri campi, in particolare le coordinate geografiche, vengono calcolati aut
 
 nella v1 i dati erano direttamente i risultati delle query di OSM, quindi meno uniformi tra di loro e con ampia variabilità. Ora invece, grazie allo script `"data_extractor_from_OSM_script.py"` i dati sono prima parsati e poi "inseriti" nel "DB" (cioè i file contenenti tutte le barriere e i facilitatori)
 
+esempio concreto di un elemento inserito dall'utente Pippo (in questo caso del file barriere.json):
+
 ```json
 {
-    "elementi": [
-        {
-            "id": 1,
-            "barreiraPer": [],      <-- tutti le problematiche per cui questo elemento potrebbe essere una barriera
-            "facilitatorePer": [],  <-- idem ma per i facilitatori
-            "infrastrutturaPer": [],
-            "autore": null,
-            "ranking": 0,
-            "nome": "attraversamento",
-            "descrizione": "attraversamento con segnale acustico",
-            "immagine": null,
-            "elementoOSM": null,
-            "coordinateCentroide": {
-                "latitudine": null,
-                "longitudine": null
-            }
-        }
-    ]
+    "id": "mock-element-id",
+    "barrieraPer": [
+        "Motoria"
+    ],
+    "facilitatorePer": [],
+    "infrastrutturaPer": [],
+    "autore": "Pippo",
+    "ranking": 50,
+    "nome": "barriera-generica",
+    "descrizione": "Questo è un dato di mock dell'utente Pippo",
+    "immagine": null,
+    "elementoOSM": null,
+    "coordinateCentroide": {
+        "longitudine": 9.184913,
+        "latitudine": 45.466296
+    }
 }```
+
+L'utente Pippo crea la barriera per le problematiche motorie di nome barriera-generica.
+A questa barriera è inizialmente stato dato un ranking di 10, ma col tempo si è alzato a 50.
+Adesso il 50% degli utenti che non sono Pippo e che non hanno come preferenze di barriere il nome "barriera-generica" vedono il 50% delle volte l'elemento creato da Pippo se i loro percorsi passano di li.
+Invece l'utente Pippo e tutti gli utenti che hanno come preferenza di barriera il nome "barriera-generica" vedono sempre l'elemento indipendentemente dal ranking che questo ha.
+
 
 
 

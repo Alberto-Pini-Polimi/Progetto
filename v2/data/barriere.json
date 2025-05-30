@@ -1,0 +1,20 @@
+[
+    {
+        "id": "mock-element-id",
+        "barrieraPer": [
+            "Motoria"
+        ],
+        "facilitatorePer": [],
+        "infrastrutturaPer": [],
+        "autore": "Pippo",
+        "ranking": 50,
+        "nome": "barriera-Generica",
+        "descrizione": "Questo è un dato di mock dell'utente Pippo",
+        "immagine": null,
+        "elementoOSM": null,
+        "coordinateCentroide": {
+            "longitudine": 9.184913,
+            "latitudine": 45.466296
+        }
+    }
+]
