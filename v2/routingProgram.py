@@ -53,6 +53,7 @@ class TipoElemento(Enum):
 # input principali da parte dell'utente
 ORS_API_KEY = open("API_KEY.txt", 'r').read().strip()
 
+NOME_UTENTE = "Utente"
 PROBLEMATICA_UTENTE = ProblemiMobilità.MOTORIA
 
 # percorso CORTO
@@ -80,7 +81,7 @@ COORDINATE_FINE = [round(COORDINATE_FINE[1], 6), round(COORDINATE_FINE[0], 6)]
 
 # definisco un'area di distanza attorno ai percorsi
 BUFFER_FACILITATORI_IN_METRI = 10
-BUFFER_BARRIERE_IN_METRI = 3
+BUFFER_BARRIERE_IN_METRI = 5
 BUFFER_INFRASTRUTTURE_IN_METRI = 50
 BUFFER_ATTORNO_AL_QUALE_SI_CREA_UNA_ZONA_PROIBITA_IN_METRI = 15
 
@@ -113,6 +114,7 @@ class Utente():
 
         name_elemento = elemento.get("name")
 
+        # gestione delle preferenze di un utente
         if name_elemento in self.tipologia_di_elemento_da_includere_sempre:
             return True
         if name_elemento in self.tipologia_di_elemento_da_evitare_sempre:
@@ -126,16 +128,18 @@ class Utente():
         if str(self.problema) in barriera_per or  str(self.problema) in facilitatore_per or str(self.problema) in infrastruttura_per:
             if elemento.get("autore") == self.nickname: # se l'elemento è inerente ed è stato creato dall'utente
                 return True # allora lo includo poiché sicuramente per lui è interessante (dato che è stato lui a crearlo)
+            
+            # se l'elemento ha ranking di 100 allora è sicuramente interessante
+            if elemento.get("ranking") == 100:
+                return True
+
             return elemento.get("ranking") >= random.randint(0, 100) # altrimenti ritorno True in funzione della probabilità 
 
         return False
 
-
-
-
-class ElementoOSM:
+class Elemento:
     """
-        Classe base per qualsiasi elemento proveniente da OpenStreetMap
+        Classe base per qualsiasi elemento (barriera / facilitatore / infrastruttura)
     """
     
     def __init__(self, elemento_del_DB):
@@ -172,7 +176,6 @@ class ElementoOSM:
             return TipoElemento.INFRASTRUTTURA
         else:
             return None
-
 
 class Percorso():
 
@@ -266,7 +269,8 @@ class Percorso():
     def trovaElementiSulPercorso(self, elementi_caricati_dal_db_che_interessano_a_utente, utente):
         """
             Trova barriere, facilitatori ed infrastrutture sul percorso in base agli elementi caricati e all'utente.
-            Categorizza gli elementi per un certo utente e verifica che questi rientrino nel buffer appositio alla categoria.
+            Categorizza gli elementi per un certo utente e verifica che questi rientrino nel buffer appositio della 
+            categoria di elemento calcolata.
         """
         self.barriere_trovate = []
         self.facilitatori_trovati = []
@@ -473,21 +477,25 @@ def caricaElementiDaJSON(directory_risultati, bbox, utente):
 
                 contenuto = file.read()
                 if not contenuto.strip():  # Verifica se il contenuto (dopo aver rimosso spazi bianchi) è vuoto
-                    print("Vuoto, skipppo")
+                    print("Vuoto, skipppo\n")
                     continue  # Passa al file successivo
 
                 # Carico il contenuto del file
                 try:
                     data = json.loads(contenuto)
                     # Processa i dati JSON
+                    aggiunti = 0
                     for elemento in data:
                         # controllo se l'elemento può essere utile per l'utente
                         if utente.interessa(elemento):
                             # controllo se rientra nella bounding box
                             if bbox[0] <= elemento["coordinateCentroide"]["longitudine"] <= bbox[2] and bbox[1] <= elemento["coordinateCentroide"]["latitudine"] <= bbox[3]:
-                                elemento_osm = ElementoOSM(elemento)  # Crea l'elemento OSM
+                                elemento_osm = Elemento(elemento)  # Crea l'elemento OSM
                                 if elemento_osm:
                                     elementi.append(elemento_osm)  # E lo aggiunge agli altri
+                                    aggiunti += 1
+                    
+                    print(f"{aggiunti} elementi aggiunti!\n")
 
                 except json.JSONDecodeError:
                     print(f"Errore nel parsing del file JSON: {file_path}")
@@ -496,8 +504,10 @@ def caricaElementiDaJSON(directory_risultati, bbox, utente):
                     print(f"Errore: bbox: {bbox}")
                     print(f"Errore: elemento: {elemento["coordinateCentroide"]}")
                     print(f"Id elemento: {elemento["id"]}")
+            
+
     
-    print(f"{len(elementi)} trovati!")
+    print(f"{len(elementi)} in totale trovati!")
 
     return elementi # Ritorna quindi tutti gli elementi parsati
 
@@ -599,7 +609,7 @@ def main():
 
     directory_risultati = "data"  # Directory dove sono salvati i risultati delle query Overpass
     # definisco l'untete (sia il nome che la disabilità sono considerati nella fase di caricamento elementi dal DB)
-    utente = Utente("firstUserEver", PROBLEMATICA_UTENTE)
+    utente = Utente(NOME_UTENTE, PROBLEMATICA_UTENTE)
     # coordinate di inizio e fine
     inizio = COORDINATE_INIZIO
     fine = COORDINATE_FINE
@@ -614,7 +624,7 @@ def main():
 
     # il percorso STANDARD mi è utile per caricare gli elementi dal DB in modo efficiente
     # non avrebbe senso caricare elementi in memoria che sono da tutt'altra parte del percorso calcolato
-    print("\nCaricamento dati da file JSON...")
+    print("\nCaricamento dati da file JSON...\n")
     elementi_osm_personalizzati_caricati_dal_db = caricaElementiDaJSON(directory_risultati, percorso.bbox, utente)
 
     # ------------ TROVO GLI ELEMENTI VICINI AL PERCORSO ------------
