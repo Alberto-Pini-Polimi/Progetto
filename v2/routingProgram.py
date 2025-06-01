@@ -60,8 +60,8 @@ PROBLEMATICA_UTENTE = ProblemiMobilità.MOTORIA
 #COORDINATE_FINE = [45.46952050871136, 9.180556820875562] # castello Sforzesco
 
 # percorso LUNGO
-#COORDINATE_INIZIO = [45.47686209277475, 9.122741092267772] # san Siro
-#COORDINATE_FINE = [45.45447977998694, 9.21002802045689] # piazzale libia
+COORDINATE_INIZIO = [45.47686209277475, 9.122741092267772] # san Siro
+COORDINATE_FINE = [45.45447977998694, 9.21002802045689] # piazzale libia
 
 # altro percorso
 #COORDINATE_INIZIO = [45.4574769358078, 9.166137110591368] # parco Don Luigi Giussani
@@ -70,8 +70,8 @@ PROBLEMATICA_UTENTE = ProblemiMobilità.MOTORIA
 #COORDINATE_INIZIO = [45.43316993192978, 9.158379520641018] # parco Don Luigi Giussani
 #COORDINATE_FINE = [45.46069914927452, 9.215797267672631] # planetario
 
-COORDINATE_INIZIO = [45.46797351580205, 9.182596260259444] # CAIROLI
-COORDINATE_FINE = [45.46420895249842, 9.18958581318816] # PIAZZA DUOMO
+#COORDINATE_INIZIO = [45.46797351580205, 9.182596260259444] # CAIROLI
+#COORDINATE_FINE = [45.46420895249842, 9.18958581318816] # PIAZZA DUOMO
 
 COORDINATE_INIZIO = [round(COORDINATE_INIZIO[1], 6), round(COORDINATE_INIZIO[0], 6)]
 COORDINATE_FINE = [round(COORDINATE_FINE[1], 6), round(COORDINATE_FINE[0], 6)]
@@ -134,7 +134,9 @@ class Utente():
 
 
 class ElementoOSM:
-    """Classe base per qualsiasi elemento proveniente da OpenStreetMap"""
+    """
+        Classe base per qualsiasi elemento proveniente da OpenStreetMap
+    """
     
     def __init__(self, elemento_del_DB):
         self.id = elemento_del_DB['id']
@@ -158,6 +160,9 @@ class ElementoOSM:
             self.ranking = 0
 
     def per(self, utente):
+        """
+            Ritorna cosa self è per l'utente (barriera / facilitatore / infrastruttura)
+        """
 
         if utente.problema.value in self.barriera_per:
             return TipoElemento.BARRIERA
@@ -258,15 +263,16 @@ class Percorso():
         else:
             raise ValueError("Tipo di buffer non valido. Deve essere 'barriere' o 'facilitatori'.")
 
-    def trovaElementiSulPercorso(self, elementi_caricati, utente):
+    def trovaElementiSulPercorso(self, elementi_caricati_dal_db_che_interessano_a_utente, utente):
         """
-        Trova barriere e facilitatori sul percorso in base agli elementi caricati e all'utente
+            Trova barriere, facilitatori ed infrastrutture sul percorso in base agli elementi caricati e all'utente.
+            Categorizza gli elementi per un certo utente e verifica che questi rientrino nel buffer appositio alla categoria.
         """
         self.barriere_trovate = []
         self.facilitatori_trovati = []
         self.infrastrutture_trovate = []
 
-        for elemento in elementi_caricati:
+        for elemento in elementi_caricati_dal_db_che_interessano_a_utente:
             
             # Verifica cosa l'elemento è per l'utente e se è nel rispettivo buffer
 
@@ -293,11 +299,11 @@ class MappaFolium:
     
     def __init__(self, centro=None, zoom_start=15):
         """
-        Inizializza una nuova mappa Folium
+            Inizializza una nuova mappa Folium
         
-        Args:
-            centro: tuple (lat, lon) del centro della mappa
-            zoom_start: livello di zoom iniziale
+            Args:
+                centro: tuple (lat, lon) del centro della mappa
+                zoom_start: livello di zoom iniziale
         """
         if centro:
             self.mappa = folium.Map(location=centro, zoom_start=zoom_start)
@@ -444,11 +450,11 @@ def creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_fi
     return
 
 
-# caricare elementi da file JSON
-
 def caricaElementiDaJSON(directory_risultati, bbox, utente):
     """
-    Carica tutti gli elementi dai file JSON nella directory specificata
+        Carica tutti gli elementi dai file JSON che trova nella directory "data" che:
+            - abbiano il centroide all'interno della bbox specificata
+            - che siano di interesse per l'utente specificato
     """
 
     if isinstance(utente, ProblemiMobilità):
@@ -502,17 +508,7 @@ def caricaElementiDaJSON(directory_risultati, bbox, utente):
 
 def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, preferenza="fastest"):
     """
-    Calcola uno o più percorsi pedonale usando OpenRouteService
-    
-    Args:
-        inizio: lista [lon, lat]
-        fine: lista [lon, lat]
-        headers: headers per l'API ORS
-        aree_da_evitare: lista di elementiOSM da evitare (opzionale)
-        waypoints: lista di waypoints [lat, lon] da includere nel percorso successivamente selezionato (opzionale)
-    
-    Returns:
-        routes found
+        Calcola uno o più percorsi pedonali usando OpenRouteService
     """
     # Controllo validità coordinate
     if len(inizio) != 2 or len(fine) != 2:
@@ -575,7 +571,6 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
     try:    
         call = requests.post('https://api.openrouteservice.org/v2/directions/foot-walking/json', json=body, headers=headers)
         call.raise_for_status()
-        #print(call)
         route_data = json.loads(call.text)
         
         if "routes" in route_data and len(route_data["routes"]) > 0:
@@ -589,6 +584,8 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
             print("Chiave API non valida o mancante")
         elif call.status_code == 403:
             print("Accesso negato")
+        elif call.status_code == 413:
+            print("Richiesta troppo grande!")
         exit(-1)
     except Exception as e:
         print(f"Errore nel calcolo del percorso: {e}")
@@ -598,81 +595,84 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
 
 def main():
 
-    # ------------ Impostazioni ------------
-    directory_risultati = "data"  # Directory dove sono salvati i risultati delle query Overpass
-    #file_della_mappa = "mappa_percorso.html"  # Nome fisso per il file della mappa
+    # ------------ INPUT ------------
 
-    # ------------ dati di input ------------
+    directory_risultati = "data"  # Directory dove sono salvati i risultati delle query Overpass
+    # definisco l'untete (sia il nome che la disabilità sono considerati nella fase di caricamento elementi dal DB)
     utente = Utente("firstUserEver", PROBLEMATICA_UTENTE)
-    # per inserire coordinate di inizio e fine
+    # coordinate di inizio e fine
     inizio = COORDINATE_INIZIO
     fine = COORDINATE_FINE
 
-    # ------------ calcolo iniziale del percorso ------------
-    print(f"Calcolo percorso da {inizio} a {fine}...")
-    results = chiamataAPIdiORS(inizio, fine) # quello calcolato è il percorso di default ed anche il più veloce
-    # e creazione l'oggetto percorso
-    percorso = Percorso(results[0])
-    
-    # ------------ caricamento dati ------------
-    print("\nCaricamento dati da file JSON...")
-    elementi_osm_personalizzati = caricaElementiDaJSON(directory_risultati, percorso.bbox, utente) # qua carico tutti gli elementi 
-    print(f"\nCaricati {len(elementi_osm_personalizzati)} elementi all'interno della bbox del percoso calcolato") # a prescindere dalla vicinanza al percorso
-    # questi elementi_osm sono già stati estratti considerando l'utente che li ha richiesti e la bbox del percorso (carico in memoria solo gli elementi necessari)
+    # ------------ CALCOLO PERCORSO STANDARD ------------
 
-    # ------------ selezione dati caricati ------------
+    print(f"Calcolo percorso STANDARD da {inizio} a {fine}...")
+    # quello calcolato è il percorso di default ed anche il più veloce
+    percorso = Percorso(chiamataAPIdiORS(inizio, fine)[0])
+    
+    # ------------ CARICAMENTO DATI DAL DB ------------
+
+    # il percorso STANDARD mi è utile per caricare gli elementi dal DB in modo efficiente
+    # non avrebbe senso caricare elementi in memoria che sono da tutt'altra parte del percorso calcolato
+    print("\nCaricamento dati da file JSON...")
+    elementi_osm_personalizzati_caricati_dal_db = caricaElementiDaJSON(directory_risultati, percorso.bbox, utente)
+
+    # ------------ TROVO GLI ELEMENTI VICINI AL PERCORSO ------------
+
     # dagli elementi estratti trovo quelli rientranti nei buffer del percorso separandoli fra barriere, facilitatori ed infrastrutture
-    print(f"\nCercando barriere e facilitatori per utente {utente.nickname} con disabilità: {utente.problema} lungo il percorso di default")
-    barriere, facilitatori, infrastrutture = percorso.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
+    print(f"\nCercando barriere, facilitatori e infrastrutture per l'utente {utente.nickname} con disabilità: {utente.problema} lungo il percorso di default")
+    barriere, facilitatori, infrastrutture = percorso.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
     print(f"Risultato:\n - {len(barriere)} barriere\n - {len(facilitatori)} facilitatori\n - {len(infrastrutture)} infrastrutture\ntrovati sul percorso")
 
-    # ------------ disegno percorso di default ------------
-    # creo la mappa col percorso e tutto il resto
-    creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, "mappa_più_veloce.html")
+    # una volta trovati tutti gli elementi necessari basta disegnare la mappa
+    creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, "mappa_standard.html")
 
+    # se la mappa non ha alcuna barreira allora ho finito
+    if len(barriere) == 0:
+        return
+    # altrimenti provo a rimuovere queste barriere in 2 modi:
+    #  1. iterazioni consecutive
+    #  2. evitando tutte le barriere nella bbox
+
+    # ------------ 1. ITERAZIONI ------------
+    # tendenzialmente rimuove tutte le barriere, ma non è mai detto con certezza
+    # inoltre si fanno 3 chiamate all'api una dopo l'altra
+    NUMERO_DI_ITERAZIONI = 3
+
+    # parto dal percorso standard e scelgo di evitare tutte le barriere
+    # faccio la stessa cosa per il percorso calcolato precedentemente
     tutte_barriere_da_evitare = barriere
+    for i in range(NUMERO_DI_ITERAZIONI):
+        # calcolo il nuovo percorso mettendo 
+        percorsoSenzaBarriere = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
+        # dal percorso calcolato trovo tutte le barriere
+        barriere, facilitatori, infrastrutture = percorsoSenzaBarriere.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
+        # le nuove barriere trovate le aggiungo per evitarle alla prossima iterazione
+        for barriera in barriere:
+            tutte_barriere_da_evitare.append(barriera)
 
-    # ora calcola automaticamente la mappa senza le barriere che l'utente non vuole 
-    #barriere_che_lo_user_sicuramente_vuole_rimuovere = utente.
+    # infine creo la mappa 
+    creaEDisegnaMappa(percorsoSenzaBarriere, barriere, facilitatori, infrastrutture, "mappa_con_poche_barriere_tramite_iterazione.html")
 
+    # ------------ 2. BOUNDING BOX ------------
+    # ora provo a fare un altro percorso togliendo tutte le barriere all'interno della bbox
+    # in questo modo con una sola chiamata trovo un percorso senza barriere
+    # il problema è che la richiesta potrebbe essere troppo lunga (dato la quantità di barriere da evitare)
 
-    # provo a fare un percorso togliendo tutte le barriere che incontro sulla via
-    percorsoSenzaBarriere = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
-    barriere, facilitatori, infrastrutture = percorsoSenzaBarriere.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
-    
-    
-    for barriera in barriere:
-        tutte_barriere_da_evitare.append(barriera)
-
-    percorsoSenzaBarriere = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
-    barriere, facilitatori, infrastrutture = percorsoSenzaBarriere.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
-
-    for barriera in barriere:
-        tutte_barriere_da_evitare.append(barriera)
-
-    percorsoSenzaBarriere = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
-    barriere, facilitatori, infrastrutture = percorsoSenzaBarriere.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
-
-    for barriera in barriere:
-        tutte_barriere_da_evitare.append(barriera)
-
-    percorsoSenzaBarriere = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
-    barriere, facilitatori, infrastrutture = percorsoSenzaBarriere.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
-
-    creaEDisegnaMappa(percorsoSenzaBarriere, barriere, facilitatori, infrastrutture, "mappa_senza_barriere.html")
-
-
-
-    # prova a fare un altro percorso togliendo tutte le barriere della bbox
-
+    # creo un array contenente tutti gli elementi che l'utente vuole evitare
     tutte_barriere_da_evitare = []
-    for elemento_osm in elementi_osm_personalizzati:
+    for elemento_osm in elementi_osm_personalizzati_caricati_dal_db:
         if elemento_osm.per(utente) == TipoElemento.BARRIERA:
             tutte_barriere_da_evitare.append(elemento_osm) # prendo tutte le barriere per l'utente nella bbox
 
-    percorsoSenzaBarriereDellaBbox = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
-    barriere, facilitatori, infrastrutture = percorsoSenzaBarriereDellaBbox.trovaElementiSulPercorso(elementi_osm_personalizzati, utente)
-
+    # se le barriere sono troppe per la richiesta dell'API a questa chiamata il programma 
+    # termina dicendo: "Richiesta troppo grande!"
+    risultato_chiamata = chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)
+    # genero quindi il percorso
+    percorsoSenzaBarriereDellaBbox = Percorso(risultato_chiamata[0])
+    # trovo come al solito tutti i tipi di elementi da quelli caricati
+    barriere, facilitatori, infrastrutture = percorsoSenzaBarriereDellaBbox.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
+    # e lo disegno
     creaEDisegnaMappa(percorsoSenzaBarriereDellaBbox, barriere, facilitatori, infrastrutture, "mappa_senza_barriere_della_bbox.html")
 
 
