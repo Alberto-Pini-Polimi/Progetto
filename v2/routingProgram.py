@@ -54,6 +54,8 @@ class TipoElemento(Enum):
 ORS_API_KEY = open("API_KEY.txt", 'r').read().strip()
 
 NOME_UTENTE = "Utente"
+#NOME_UTENTE = "Pippo"
+# NOME_UTENTE = "Pluto"
 PROBLEMATICA_UTENTE = ProblemiMobilità.MOTORIA
 
 # percorso CORTO
