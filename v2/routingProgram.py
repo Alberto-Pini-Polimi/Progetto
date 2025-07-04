@@ -169,7 +169,6 @@ class Elemento:
         """
             Ritorna cosa self è per l'utente (barriera / facilitatore / infrastruttura)
         """
-
         if utente.problema.value in self.barriera_per:
             return TipoElemento.BARRIERA
         elif utente.problema.value in self.facilitatore_per:
@@ -517,7 +516,6 @@ def caricaElementiDaJSON(directory_risultati, bbox, utente):
 
 
 # chiamata all'API di OpenRouteService per calcolare i percorsi
-
 def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, preferenza="fastest"):
     """
         Calcola uno o più percorsi pedonali usando OpenRouteService
