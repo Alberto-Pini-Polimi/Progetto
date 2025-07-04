@@ -52,6 +52,8 @@ Le principali librerie utilizzate dal programma sono:
 
 Alcune di queste (come `json`, `os`, `enum`, `webbrowser`, `datetime`, `random`) dovrebbero già far parte della libreria standard di Python e non richiedono quindi un'installazione aggiuntiva.
 
+Serve ora ottenere un'API KEY per poter usare il servizio di ORS, server loggarsi con delle credenziali dal sito [[link](https://account.heigit.org/)]
+
 Per eseguire il programma di routing, è necessario posizionarsi nella directory `v2/` e lanciare lo script Python.
 
 ```bash
