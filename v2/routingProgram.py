@@ -11,7 +11,6 @@ import webbrowser
 from datetime import datetime
 import random
 
-
 class ProblemiMobilità(Enum):
 
     # Disabilità Fisica
@@ -194,6 +193,9 @@ class Percorso():
         }
     
     """
+
+    # geo = shapely -> formato "semplice" cioè insiemi di coordinate (con classi Point Line Polygon ...)
+    # utm -> formato usato per le funzioni di buffer e contains
     
     def __init__(self, percorso):
 
@@ -203,7 +205,7 @@ class Percorso():
         # prendo il bbox (bounding box per acere un rang in cui cercare)
         self.bbox = percorso["bbox"] # lo userò per cercare barriere e facilitatori nel DB
         # faccio il decoding della polyline (encodata in geometry)
-        self.coordinate_della_polyline = polyline.decode(percorso["geometry"])
+        self.coordinate_della_polyline = polyline.decode(percorso["geometry"]) # decode restituisce un inseme di nodi (coordinate)
         
         # Inverti le coordinate per shapely (lon, lat)
         coordinate_shapely = [inverti_coordinate(coord) for coord in self.coordinate_della_polyline]
@@ -256,14 +258,14 @@ class Percorso():
             
         # Proietta il punto barriera in UTM
         punto_utm = project_to_utm(punto_geo.x, punto_geo.y)
-        punto_utm_shapely = Point(punto_utm)
+        punto_utm_geo = Point(punto_utm)
         # Verifica il contenimento nel buffer UTM e ritorna vero o falso
         if tipo_buffer == "barriere":
-            return self.bufferBarriere_utm.contains(punto_utm_shapely)
+            return self.bufferBarriere_utm.contains(punto_utm_geo)
         elif tipo_buffer == "facilitatori":
-            return self.bufferFacilitatori_utm.contains(punto_utm_shapely)
+            return self.bufferFacilitatori_utm.contains(punto_utm_geo)
         elif tipo_buffer == "infrastrutture":
-            return self.bufferInfrastrutture_utm.contains(punto_utm_shapely)
+            return self.bufferInfrastrutture_utm.contains(punto_utm_geo)
         else:
             raise ValueError("Tipo di buffer non valido. Deve essere 'barriere' o 'facilitatori'.")
 
@@ -453,7 +455,6 @@ def creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_fi
     webbrowser.open('file://' + os.path.realpath(mappa_file))
 
     return
-
 
 def caricaElementiDaJSON(directory_risultati, bbox, utente):
     """
@@ -654,15 +655,18 @@ def main():
     tutte_barriere_da_evitare = barriere
     for i in range(NUMERO_DI_ITERAZIONI):
         # calcolo il nuovo percorso mettendo 
-        percorsoSenzaBarriere = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
+        percorso2 = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
+
+        # aggiungere caricaElementiDaJSON (nella nuova bbox)
+
         # dal percorso calcolato trovo tutte le barriere
-        barriere, facilitatori, infrastrutture = percorsoSenzaBarriere.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
+        barriere, facilitatori, infrastrutture = percorso2.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
         # le nuove barriere trovate le aggiungo per evitarle alla prossima iterazione
         for barriera in barriere:
             tutte_barriere_da_evitare.append(barriera)
 
     # infine creo la mappa 
-    creaEDisegnaMappa(percorsoSenzaBarriere, barriere, facilitatori, infrastrutture, "mappa_con_poche_barriere_tramite_iterazione.html")
+    creaEDisegnaMappa(percorso2, barriere, facilitatori, infrastrutture, "mappa_con_poche_barriere_tramite_iterazione.html")
 
     # ------------ 2. BOUNDING BOX ------------
     # ora provo a fare un altro percorso togliendo tutte le barriere all'interno della bbox
@@ -679,11 +683,11 @@ def main():
     # termina dicendo: "Richiesta troppo grande!"
     risultato_chiamata = chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)
     # genero quindi il percorso
-    percorsoSenzaBarriereDellaBbox = Percorso(risultato_chiamata[0])
+    percorso3 = Percorso(risultato_chiamata[0])
     # trovo come al solito tutti i tipi di elementi da quelli caricati
-    barriere, facilitatori, infrastrutture = percorsoSenzaBarriereDellaBbox.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
+    barriere, facilitatori, infrastrutture = percorso3.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
     # e lo disegno
-    creaEDisegnaMappa(percorsoSenzaBarriereDellaBbox, barriere, facilitatori, infrastrutture, "mappa_senza_barriere_della_bbox.html")
+    creaEDisegnaMappa(percorso3, barriere, facilitatori, infrastrutture, "mappa_senza_barriere_della_bbox.html")
 
 
 if __name__ == "__main__":
