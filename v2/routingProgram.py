@@ -503,9 +503,9 @@ def caricaElementiDaJSON(directory_risultati, bbox, utente):
                 except Exception as e:
                     print(f"Errore durante l'elaborazione del file {file_path}: {e}")
                     print(f"Errore: bbox: {bbox}")
-                    print(f"Errore: elemento: {elemento["coordinateCentroide"]}")
-                    print(f"Id elemento: {elemento["id"]}")
-            
+                    print(f"Errore: elemento: {elemento['coordinateCentroide']}")
+                    print(f"Id elemento: {elemento['id']}")
+
 
     
     print(f"{len(elementi)} in totale trovati!")
