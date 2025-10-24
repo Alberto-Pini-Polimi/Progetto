@@ -51,7 +51,7 @@ class TipoElemento(Enum):
 
 
 # input principali da parte dell'utente
-ORS_API_KEY = open("API_KEY.txt", 'r').read().strip()
+ORS_API_KEY = open("./Keys/API_KEY.txt", 'r').read().strip()
 
 NOME_UTENTE = "Utente"
 #NOME_UTENTE = "Pippo"
