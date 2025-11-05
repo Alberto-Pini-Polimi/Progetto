@@ -1,0 +1,36 @@
+{
+  "routingDefaults": {
+    "wheelchairAccessibility": {
+      "trip": {
+        "onlyConsiderAccessible": false,
+        "unknownCost": 3600,
+        "inaccessibleCost": 3600
+      },
+      "stop": {
+        "onlyConsiderAccessible": false,
+        "unknownCost": 3600,
+        "inaccessibleCost": 3600
+      },
+      "elevator": {
+        "onlyConsiderAccessible": false
+      },
+      "inaccessibleStreetReluctance": 25,
+      "maxSlope": 0.08333,
+      "slopeExceededReluctance": 1,
+      "stairsReluctance": 25
+    }
+  },
+  "maxTransfers": 4,
+  "maxWalkDistance": 2000,
+  "maxPreTransitTime": 900,
+  "maxInitialWaitTime": 900,
+  "maxTransferWaitTime": 900,
+  "interlineWithPreviousLegWhenSameRoute": true,
+  "routingTimeout": 30000,
+  "transitModes": [
+    "BUS",
+    "TRAM",
+    "RAIL",
+    "SUBWAY"
+  ]
+}

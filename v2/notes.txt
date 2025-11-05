@@ -1,0 +1,3 @@
+i costi nei json corrispondono a secondi aggiuntivi
+
+in build-config.json si puo specificare che anche il path a piedi dev'esser fatto per wheelchairs con la sintassi della documentazione
