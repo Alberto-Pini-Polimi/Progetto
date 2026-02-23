@@ -32,8 +32,11 @@ dateo
 lampugnano m1
 45.48898 9.125479
 
-cadorna m1 m2
+cadorna m1 m2 (accessibile)
 45.46765 9.175563
+
+sant agostino m2 (accessibile)
+45.45876 9.169992
 
 cologno sud m2
 45.51992 9.274548
@@ -44,6 +47,10 @@ tra moscova e lanza m2
 caiazzo m2
 45.48535 9.209441
 '''
+###CONCLUSIONI IMPORTANTI:
+# aumentare e diminuire i costi blocca solo la fermata suggerita
+# c è da controllare se non ne analizza altre per colpa di un max egress o simili
+# altenrativamente si puo lavorare con calcoli di percorsi partendo da punti spostati
 
 import requests
 import json
@@ -57,8 +64,11 @@ query trip(
   $from: Location!,
   $to: Location!,
   $modes: Modes,
+  $wheelchair: Boolean,
+  $searchWindow: Int,
+  $arriveBy: Boolean
 ) {
-  trip(dateTime: $dateTime, from: $from, to: $to, modes: $modes) {
+  trip(dateTime: $dateTime, from: $from, to: $to, modes: $modes, wheelchairAccessible: $wheelchair, searchWindow: $searchWindow, arriveBy: $arriveBy, debugItineraryFilter:true) {
     tripPatterns {
       aimedStartTime
       aimedEndTime
@@ -67,8 +77,10 @@ query trip(
       duration
       distance
       generalizedCost
+      systemNotices { tag text }
       legs {
         id
+        generalizedCost
         mode
         fromPlace { name quay { id } }
         toPlace { name quay { id } }
@@ -83,17 +95,17 @@ query trip(
 variables = {
   "from": {
     "coordinates": {
-      "latitude": 45.47437,
-      "longitude": 9.183323
+      "latitude": 45.46765,
+      "longitude": 9.175563
     }
   },
   "to": {
     "coordinates": {
-      "latitude": 45.48535,
-      "longitude": 9.209441
+      "latitude": 45.45876,
+      "longitude": 9.169992
     }
   },
-  "dateTime": "2025-10-24T18:07:08.511Z",
+  "dateTime": "2026-04-01T16:07:08.511Z",
   "modes": {
     "transportModes": [
       {"transportMode": "bus"},
@@ -101,38 +113,18 @@ variables = {
       {"transportMode": "tram"}
     ],
     "accessMode": "foot",
-    "egressMode": "foot"
+    "egressMode": "foot",
+    "directMode": "foot" #permette di avere anche i percorsi a piedi completi
   },
-}
+  "wheelchair": True, #permette di usare i params wheelchair
+  "arriveBy": False,
+  "searchWindow": 360  # minuti: 6 ore
 
-# Config wheelchair senza cambiare log o mezzi
-wheelchair_payload = {
-    "routingDefaults": {
-        "wheelchairAccessibility": {
-            "trip": {
-                "onlyConsiderAccessible": True,
-                "unknownCost": 600,
-                "inaccessibleCost": 3600
-            },
-            "stop": {
-                "onlyConsiderAccessible": True,
-                "unknownCost": 600,
-                "inaccessibleCost": 3600
-            },
-            "elevator": {"onlyConsiderAccessible": True},
-            "inaccessibleStreetReluctance": 25,
-            "maxSlope": 0.08333,
-            "slopeExceededReluctance": 1,
-            "stairsReluctance": 25
-        }
-    },
-    "updaters": []
 }
 
 payload = {
     "query": query,
-    "variables": variables,
-    "routingDefaults": wheelchair_payload["routingDefaults"]
+    "variables": variables
 }
 
 response = requests.post(url, json=payload, headers=headers)
@@ -144,17 +136,23 @@ try:
 except json.JSONDecodeError:
     print("❌ Risposta non in formato JSON:", response.text)
 
-# Stampa percorso con i tuoi log
+# STAMPA PATH
 if "data" in data and data["data"].get("trip"):
     trip = data["data"]["trip"]
     if trip.get("tripPatterns"):
-        pattern = trip["tripPatterns"][0]
+        pattern = trip["tripPatterns"][0] #DEBUG solo il primo percorso?
         durata_min = int(pattern.get('duration', 0) / 60)
         distanza_km = pattern.get('distance', 0) / 1000
         print(f"\n--- Primo percorso trovato ---")
         print(f"Durata prevista: {durata_min} min")
         print(f"Distanza totale: {distanza_km:.2f} km")
-        print(f"Costo generalizzato: {pattern.get('generalizedCost')}\n")
+        print(f"Costo generalizzato: {pattern.get('generalizedCost')/60:.1f}m\n")
+        notices = pattern.get("systemNotices") or []
+        if notices:
+            print("Notices (itinerary filter/debug):")
+            for n in notices:
+                print(f"  - [{n.get('tag')}] {n.get('text')}")
+            print()
 
         for i, leg in enumerate(pattern["legs"], 1):
             mode = leg['mode']
@@ -178,3 +176,5 @@ if "data" in data and data["data"].get("trip"):
         print("❌ Nessun tripPattern trovato.")
 else:
     print("❌ Nessun percorso trovato.")
+    print(json.dumps(data, indent=2))
+

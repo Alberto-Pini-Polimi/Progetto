@@ -1,3 +1,20 @@
 i costi nei json corrispondono a secondi aggiuntivi
 
 in build-config.json si puo specificare che anche il path a piedi dev'esser fatto per wheelchairs con la sintassi della documentazione
+
+
+
+c è da chiarire se agostino sia la metro, sembra che modificando inaccessible costs me la blocchi ma dovrebbe essere accessibile
+
+
+
+
+ipotesi molto valida: se metti transit scarta il walk only, quindi suggerisce niente se il costo è troppo alto oppure il mezzo inaccessibile se abbassi
+
+poi ho messo debug e quello permette walk only quindi continua a suggerirlo ma non si sa perche ignora i mezzi ora anche se metto costo basso
+
+
+lo script attuale applica bene i costi ma se accetti direct walk lo mette come primo path automaticamente indipendentemente dal costo.
+Nel caso si tratta di paragonarlo poi all altro miglior path, non è un problema. SEMBRA COSI FINALMENTE :D
+
+Piuttosto c è da chiarire se c è modo di trovare il miglior path o se tipo propone in ordine i migliori paths e poi filtra per handicap perche nel caso è lunga
