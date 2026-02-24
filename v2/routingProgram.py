@@ -577,7 +577,11 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
                 # Continua senza aree da evitare
     
     # Faccio la call a ORS
-    try:    
+    try:
+        import time 
+        import random
+        time.sleep(random.uniform(0, 2)) #aggiungo un piccolo delay per evitare di fare troppe chiamate in poco tempo (e rischiare di essere bloccati)
+
         call = requests.post('https://api.openrouteservice.org/v2/directions/foot-walking/json', json=body, headers=headers)
         call.raise_for_status()
         route_data = json.loads(call.text)

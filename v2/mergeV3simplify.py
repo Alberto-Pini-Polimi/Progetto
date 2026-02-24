@@ -86,28 +86,35 @@ def extract_walk_legs(patterns):
     ]
     """
     walk_legs = []
-    for it_idx, p in enumerate(patterns, 1):
-        for leg_idx, leg in enumerate(p.get("legs") or [], 1):
-            mode = (leg.get("mode") or "").upper()
-            if mode != "FOOT":
-                continue
 
-            fp = leg.get("fromPlace") or {}
-            tp = leg.get("toPlace") or {}
+    if not patterns:
+        return walk_legs
 
-            a = get_place_coord(fp)
-            b = get_place_coord(tp)
-            if not a or not b:
-                continue
+    p = patterns[0]   # ← solo primo path
+    itinerary_idx = 1
 
-            walk_legs.append({
-                "itinerary_idx": it_idx,
-                "leg_idx": leg_idx,
-                "from_name": fp.get("name") or "?",
-                "to_name": tp.get("name") or "?",
-                "from": a,  # (lat, lon)
-                "to": b,    # (lat, lon)
-            })
+    for leg_idx, leg in enumerate(p.get("legs") or [], 1):
+        mode = (leg.get("mode") or "").upper()
+        if mode != "FOOT":
+            continue
+
+        fp = leg.get("fromPlace") or {}
+        tp = leg.get("toPlace") or {}
+
+        a = get_place_coord(fp)
+        b = get_place_coord(tp)
+        if not a or not b:
+            continue
+
+        walk_legs.append({
+            "itinerary_idx": itinerary_idx,
+            "leg_idx": leg_idx,
+            "from_name": fp.get("name") or "?",
+            "to_name": tp.get("name") or "?",
+            "from": a,
+            "to": b,
+        })
+
     return walk_legs
 
 def ORS_call_and_draw(patterns):
@@ -183,12 +190,13 @@ def main():
         print("Nessun tripPattern trovato.")
         return
 
-    #ordino per generalizedCost (costo generale) e prendo i primi 5
+    #ordino per generalizedCost (costo generale) e prendo i primi 3
     patterns = sorted(
         patterns,
         key=lambda p: p.get("generalizedCost") if p.get("generalizedCost") is not None else float("inf")
-    )[:5]
+    )[:3]
 
+    #SVARIATE RIGHE SOLTANTO PER STAMPARE. LA LOGICA CONTINUA DOVE DICO CHE MI COLLEGO CON ALBERTO
     print(f"Top {len(patterns)} itinerari (wheelchair={WHEELCHAIR}):")
     for idx, p in enumerate(patterns, 1):
         #INFO GENERALI DEL PATH
@@ -204,7 +212,7 @@ def main():
         print(f"\n--- Itinerario #{idx} ---")
         print(f"Generalized cost: {cost_str} | Durata prevista: {dur_str}")
 
-        #INFO SULLE SINGOLE LEGS
+        #STAMPO LE INFO SULLE SINGOLE LEGS
         legs = p.get("legs") or []
         for j, leg in enumerate(legs, 1):
             mode = (leg.get("mode") or "?").upper()
@@ -225,12 +233,11 @@ def main():
                 line_str = (f"{code} {name}").strip() or "Linea sconosciuta"
                 print(f" {j}. {mode} {a_name} {a_coord} → {b_name} {b_coord} ({line_str})")
 
+
     #DA QUA AVVIENE IL COLLEGAMENTO CON SCRIPT DI ALBERTO
-    
     #chiamo una funzione a cui passo le coordinate delle walking legs e i nomi delle linee con salita e discesa.
     #questa funzione chiama ORS per calcolare la polyline pedonale, poi applica il matching OSM e disegna
     ORS_call_and_draw(patterns) #TODO dare la possibilita a un utente di scegliere quale itinerario scegliere tra i path di osm
-
 
 if __name__ == "__main__":
     main()
