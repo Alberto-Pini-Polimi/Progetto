@@ -11,8 +11,8 @@
       },
       "stop": {
         "onlyConsiderAccessible": false,
-        "unknownCost": 60000,
-        "inaccessibleCost": 600000
+        "unknownCost": 60,
+        "inaccessibleCost": 600
       },
       "elevator": {
         "onlyConsiderAccessible": false,

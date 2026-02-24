@@ -51,7 +51,6 @@ class TipoElemento(Enum):
 
 
 # input principali da parte dell'utente
-ORS_API_KEY = open("./Keys/API_KEY.txt", 'r').read().strip()
 
 NOME_UTENTE = "Utente"
 #NOME_UTENTE = "Pippo"
@@ -513,13 +512,13 @@ def caricaElementiDaJSON(directory_risultati, bbox, utente):
     return elementi # Ritorna quindi tutti gli elementi parsati
 
 
-
-
 # chiamata all'API di OpenRouteService per calcolare i percorsi
 def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, preferenza="fastest"):
     """
         Calcola uno o più percorsi pedonali usando OpenRouteService
     """
+    print(f"cerco la key partendo da {os.getcwd()}")
+    ORS_API_KEY = open("./v2/Keys/API_KEY.txt", 'r').read().strip() #TODO forse serve global
     # Controllo validità coordinate
     if len(inizio) != 2 or len(fine) != 2:
         print("Coordinate di inizio o fine non valide")
@@ -607,7 +606,7 @@ def main():
 
     # ------------ INPUT ------------
 
-    directory_risultati = "data"  # Directory dove sono salvati i risultati delle query Overpass
+    directory_risultati = "v2/data"  # Directory dove sono salvati i risultati delle query Overpass
     # definisco l'untete (sia il nome che la disabilità sono considerati nella fase di caricamento elementi dal DB)
     utente = Utente(NOME_UTENTE, PROBLEMATICA_UTENTE)
     # coordinate di inizio e fine
@@ -658,8 +657,14 @@ def main():
         # dal percorso calcolato trovo tutte le barriere
         barriere, facilitatori, infrastrutture = percorsoSenzaBarriere.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
         # le nuove barriere trovate le aggiungo per evitarle alla prossima iterazione
+        # se non ci sono più barriere → fermati
+        if len(barriere) == 0:
+            print(f"Nessuna barriera trovata all'iterazione {i+1}, stop.")
+            break
+
         for barriera in barriere:
-            tutte_barriere_da_evitare.append(barriera)
+            if barriera not in tutte_barriere_da_evitare:
+                tutte_barriere_da_evitare.append(barriera)
 
     # infine creo la mappa 
     creaEDisegnaMappa(percorsoSenzaBarriere, barriere, facilitatori, infrastrutture, "mappa_con_poche_barriere_tramite_iterazione.html")
@@ -673,7 +678,7 @@ def main():
     tutte_barriere_da_evitare = []
     for elemento_osm in elementi_osm_personalizzati_caricati_dal_db:
         if elemento_osm.per(utente) == TipoElemento.BARRIERA:
-            tutte_barriere_da_evitare.append(elemento_osm) # prendo tutte le barriere per l'utente nella bbox
+            tutte_barriere_da_evitare.append(elemento_osm) # prendo tutte le barriere specifiche per l'utente nella bbox
 
     # se le barriere sono troppe per la richiesta dell'API a questa chiamata il programma 
     # termina dicendo: "Richiesta troppo grande!"
@@ -684,6 +689,64 @@ def main():
     barriere, facilitatori, infrastrutture = percorsoSenzaBarriereDellaBbox.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
     # e lo disegno
     creaEDisegnaMappa(percorsoSenzaBarriereDellaBbox, barriere, facilitatori, infrastrutture, "mappa_senza_barriere_della_bbox.html")
+
+def run_with_coordinates(COORDINATE_INIZIO_input, COORDINATE_FINE_input,
+                         NOME_UTENTE_input=None, PROBLEMATICA_UTENTE_input=None,
+                         mappa_file_input=None, directory_risultati_input=None):
+    """
+    Wrapper MINIMALE per riusare routingProgram.
+    Accetta coordinate in formato (lat, lon) o [lat, lon].
+    Imposta le global già usate dal codice e richiama main().
+    """
+
+    #definisco global perche cosi van a sovrascrivere quelle già usate nel codice e non mi danno problemi di scope
+    #TODO in futuro l'utente potrà sovrascrivere questi valori passandoli a questa funzione che teoricamente vengono dall'account loggato
+    global COORDINATE_INIZIO, COORDINATE_FINE
+    global NOME_UTENTE, PROBLEMATICA_UTENTE
+
+    # opzionali (se vuoi renderli variabili senza cambiare il resto)
+    global directory_risultati #TODO ora non dovrebbe servire
+    global mappa_file #TODO ora non dovrebbe servire
+
+    # set utente se passato
+    if NOME_UTENTE_input is not None:
+        NOME_UTENTE = NOME_UTENTE_input
+    if PROBLEMATICA_UTENTE_input is not None:
+        PROBLEMATICA_UTENTE = PROBLEMATICA_UTENTE_input
+
+    # se vuoi personalizzare output/dir senza toccare troppo codice:
+    if directory_risultati_input is not None:
+        directory_risultati = directory_risultati_input  # userai questa global se la aggiungi nel main
+    if mappa_file_input is not None:
+        mappa_file = mappa_file_input  # idem
+
+    # routingProgram internamente usa [lon, lat] per ORS (perché poi fa: [coord[1], coord[0]])
+    # quindi qui accetto (lat, lon) e converto nella forma “legacy” che ti fa funzionare tutto senza pensarci:
+    a_lat, a_lon = float(COORDINATE_INIZIO_input[0]), float(COORDINATE_INIZIO_input[1])
+    b_lat, b_lon = float(COORDINATE_FINE_input[0]), float(COORDINATE_FINE_input[1])
+
+    # COORDINATE_* in questo file, prima del main, vengono trasformate in [lon, lat]
+    # Per minimizzare sorprese: setto già direttamente [lon, lat] come il codice si aspetta poi
+    COORDINATE_INIZIO = [round(a_lon, 6), round(a_lat, 6)]
+    COORDINATE_FINE   = [round(b_lon, 6), round(b_lat, 6)]
+
+    return main() #eseguo il main con queste vars
+
+#TODO forse questo wrapper è piu minimale e funziona
+'''def run_with_coordinates(COORDINATE_INIZIO_input, COORDINATE_FINE_input):
+    """
+    COORDINATE_*_input sono in formato (lat, lon) o [lat, lon].
+    Il routingProgram internamente usa [lon, lat] per ORS: qui settiamo già così.
+    """
+    global COORDINATE_INIZIO, COORDINATE_FINE
+
+    a_lat, a_lon = float(COORDINATE_INIZIO_input[0]), float(COORDINATE_INIZIO_input[1])
+    b_lat, b_lon = float(COORDINATE_FINE_input[0]), float(COORDINATE_FINE_input[1])
+
+    COORDINATE_INIZIO = [round(a_lon, 6), round(a_lat, 6)]  # [lon, lat]
+    COORDINATE_FINE   = [round(b_lon, 6), round(b_lat, 6)]  # [lon, lat]
+
+    return main()'''
 
 
 if __name__ == "__main__":

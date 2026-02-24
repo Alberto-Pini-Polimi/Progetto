@@ -41,8 +41,18 @@ query trip(
       systemNotices { tag text }
       legs {
         mode
-        fromPlace { name }
-        toPlace   { name }
+        fromPlace {
+            name
+            latitude
+            longitude
+            quay { id name latitude longitude }
+        }
+        toPlace {
+            name
+            latitude
+            longitude
+            quay { id name latitude longitude }
+        }
         line { publicCode name id presentation { colour } }
       }
     }
@@ -60,7 +70,7 @@ def build_variables(wheelchair: bool) -> Dict[str, Any]:
                 {"transportMode": "bus"},
                 {"transportMode": "metro"},
                 {"transportMode": "tram"},
-                {"transportMode": "rail"}  # S/regionale: spesso essenziale a Milano
+                {"transportMode": "rail"}  # S/regionale
             ],
             "accessMode": "foot",
             "egressMode": "foot",
@@ -102,7 +112,7 @@ def print_results(label: str, data: Dict[str, Any]) -> None:
     )
 
     print(f"\n[{label}] ✅ {len(sorted_patterns)} itinerari (tripPatterns)")
-    for idx, p in enumerate(sorted_patterns[:15], 1):  # mostra i primi 10
+    for idx, p in enumerate(sorted_patterns[:5], 1):  # mostra i primi 5
         dur_min = int((p.get("duration") or 0) / 60)
         dist_km = (p.get("distance") or 0) / 1000
         cost_m  = (p.get("generalizedCost") or 0) / 60
