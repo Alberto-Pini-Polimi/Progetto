@@ -1,0 +1,28 @@
+{
+  "routingDefaults": {
+    "itineraryFilters": {
+      "debug": "list-all"
+    },
+    "wheelchairAccessibility": {
+      "trip": {
+        "onlyConsiderAccessible": false,
+        "unknownCost": 1,
+        "inaccessibleCost": 60000
+      },
+      "stop": {
+        "onlyConsiderAccessible": false,
+        "unknownCost": 6000,
+        "inaccessibleCost": 60000
+      },
+      "elevator": {
+        "onlyConsiderAccessible": false,
+        "unknownCost": 1,
+        "inaccessibleCost": 60000
+      }
+    }
+  },
+  "transit": {
+    "maxNumberOfTransfers": 10
+  },
+  "updaters": []
+}
