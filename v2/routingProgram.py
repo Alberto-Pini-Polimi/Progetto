@@ -49,6 +49,7 @@ class TipoElemento(Enum):
         """Metodo per serializzare l'Enum in JSON."""
         return self.value
 
+Browser=1 #1 per aprire il browser. SERVE SOLO SE VUOI RUNNARE routingProgram.py DA SOLO, altrimenti viene sovrascritto da mergeV3simplify.py
 
 # input principali da parte dell'utente
 
@@ -96,7 +97,6 @@ project_to_wgs = Transformer.from_crs(utm_zone, wgs84, always_xy=True).transform
 
 def inverti_coordinate(coord):
     return coord[1], coord[0]
-
 
 
 class Utente():
@@ -294,10 +294,7 @@ class Percorso():
         
         return self.barriere_trovate, self.facilitatori_trovati, self.infrastrutture_trovate
 
-
-
 # parte grafica
-
 class MappaFolium:
     """Classe per la gestione della visualizzazione su mappa Folium"""
     
@@ -405,10 +402,20 @@ class MappaFolium:
             print(f"Errore nel salvataggio della mappa: {e}")
             return False
 
+#un'unica mappa per piu run
+_MAPPA_SINGLETON = None
+def get_mappa_singleton(centro=(45.4642, 9.1900), zoom_start=12):
+    global _MAPPA_SINGLETON
+    if _MAPPA_SINGLETON is None:
+        _MAPPA_SINGLETON = MappaFolium(centro=centro, zoom_start=zoom_start)
+        #TODO opzionale aggiungi controllo layer
+    return _MAPPA_SINGLETON
+
 def creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_file):
      # Crea la mappa
     centro_percorso = percorso.percorso_geo.centroid
-    mappa = MappaFolium(centro=(centro_percorso.y, centro_percorso.x))
+    #crea la prima mappa o recupera la precedente
+    mappa = get_mappa_singleton((centro_percorso.y, centro_percorso.x))
     
     # Aggiungi il percorso
     mappa.aggiungiPolyline(percorso.coordinate_della_polyline)
@@ -419,6 +426,7 @@ def creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_fi
     #     tooltip='Area di ricerca barriere',
     #     colore='orange'
     # )
+
     # Aggiungi il buffer facilitatori
     mappa.aggiungiPoligono(
         [(y, x) for x, y in percorso.bufferFacilitatori_geo.exterior.coords],
@@ -443,16 +451,17 @@ def creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_fi
         mappa.aggiungiElemento(barriera, colore="red", icona="warning-sign")
     
     # aggiungi durata e distanza
-    mappa.aggiungiDettagli(percorso.durata, percorso.distanza, len(barriere))
-    
+    #TODO somma durata etc dei paths? e stampa solo alla fine il pannello
+    #mappa.aggiungiDettagli(percorso.durata, percorso.distanza, len(barriere))
 
     # Salva la mappa sovrascrivendo quella precedente
     mappa.salvaMappa(mappa_file)
     #print(f"Mappa del percorso salvata in: {mappa_file}")
-    webbrowser.open('file://' + os.path.realpath(mappa_file))
+    
+    if Browser == 1:
+        webbrowser.open('file://' + os.path.realpath(mappa_file))
 
     return
-
 
 def caricaElementiDaJSON(directory_risultati, bbox, utente):
     """
@@ -512,13 +521,14 @@ def caricaElementiDaJSON(directory_risultati, bbox, utente):
     return elementi # Ritorna quindi tutti gli elementi parsati
 
 
+
 # chiamata all'API di OpenRouteService per calcolare i percorsi
 def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, preferenza="fastest"):
     """
         Calcola uno o più percorsi pedonali usando OpenRouteService
     """
     print(f"cerco la key partendo da {os.getcwd()}")
-    ORS_API_KEY = open("./v2/Keys/API_KEY.txt", 'r').read().strip() #TODO forse serve global
+    ORS_API_KEY = open("./v2/Keys/API_KEY.txt", 'r').read().strip()
     # Controllo validità coordinate
     if len(inizio) != 2 or len(fine) != 2:
         print("Coordinate di inizio o fine non valide")
@@ -598,12 +608,12 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
         elif call.status_code == 403:
             print("Accesso negato")
         elif call.status_code == 413:
-            print("Richiesta troppo grande!")
+            print("Richiesta troppo grande!") #TODO non deve fare exit, forse basta cosi?
+            return None
         exit(-1)
     except Exception as e:
         print(f"Errore nel calcolo del percorso: {e}")
         exit(-1)
-
 
 
 def main():
@@ -617,7 +627,7 @@ def main():
     inizio = COORDINATE_INIZIO
     fine = COORDINATE_FINE
 
-    # ------------ CALCOLO PERCORSO STANDARD ------------
+    """ ------------ CALCOLO PERCORSO STANDARD ------------ """
 
     print(f"Calcolo percorso STANDARD da {inizio} a {fine}...")
     # quello calcolato è il percorso di default ed anche il più veloce
@@ -640,14 +650,14 @@ def main():
     # una volta trovati tutti gli elementi necessari basta disegnare la mappa
     creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, "mappa_standard.html")
 
-    # se la mappa non ha alcuna barreira allora ho finito
+    # se la mappa non ha alcuna barriera allora ho finito
     if len(barriere) == 0:
         return
     # altrimenti provo a rimuovere queste barriere in 2 modi:
     #  1. iterazioni consecutive
     #  2. evitando tutte le barriere nella bbox
 
-    # ------------ 1. ITERAZIONI ------------
+    """ ------------ 1. ITERAZIONI ------------ """
     # tendenzialmente rimuove tutte le barriere, ma non è mai detto con certezza
     # inoltre si fanno 3 chiamate all'api una dopo l'altra
     NUMERO_DI_ITERAZIONI = 3
@@ -673,7 +683,7 @@ def main():
     # infine creo la mappa 
     creaEDisegnaMappa(percorsoSenzaBarriere, barriere, facilitatori, infrastrutture, "mappa_con_poche_barriere_tramite_iterazione.html")
 
-    # ------------ 2. BOUNDING BOX ------------
+    """ ------------ 2. BOUNDING BOX ------------ """
     # ora provo a fare un altro percorso togliendo tutte le barriere all'interno della bbox
     # in questo modo con una sola chiamata trovo un percorso senza barriere
     # il problema è che la richiesta potrebbe essere troppo lunga (dato la quantità di barriere da evitare)
@@ -687,16 +697,21 @@ def main():
     # se le barriere sono troppe per la richiesta dell'API a questa chiamata il programma 
     # termina dicendo: "Richiesta troppo grande!"
     risultato_chiamata = chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)
-    # genero quindi il percorso
-    percorsoSenzaBarriereDellaBbox = Percorso(risultato_chiamata[0])
-    # trovo come al solito tutti i tipi di elementi da quelli caricati
-    barriere, facilitatori, infrastrutture = percorsoSenzaBarriereDellaBbox.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
-    # e lo disegno
-    creaEDisegnaMappa(percorsoSenzaBarriereDellaBbox, barriere, facilitatori, infrastrutture, "mappa_senza_barriere_della_bbox.html")
+    if risultato_chiamata is not None:
+        # genero quindi il percorso
+        percorsoSenzaBarriereDellaBbox = Percorso(risultato_chiamata[0])
+        # trovo come al solito tutti i tipi di elementi da quelli caricati
+        barriere, facilitatori, infrastrutture = percorsoSenzaBarriereDellaBbox.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
+        # e lo disegno
+        creaEDisegnaMappa(percorsoSenzaBarriereDellaBbox, barriere, facilitatori, infrastrutture, "mappa_senza_barriere_della_bbox.html")
+    else:
+        print("La richiesta con tutte le barriere da evitare è troppo grande quindi questa mappa non verrà considerata tra i candidati")
+
+    #TODO qua siamo a fine main hence avvio creaedisegna solo sul miglior path trovato
 
 def run_with_coordinates(COORDINATE_INIZIO_input, COORDINATE_FINE_input,
                          NOME_UTENTE_input=None, PROBLEMATICA_UTENTE_input=None,
-                         mappa_file_input=None, directory_risultati_input=None):
+                         mappa_file_input=None, directory_risultati_input=None, Browser_input=0):
     """
     Wrapper MINIMALE per riusare routingProgram.
     Accetta coordinate in formato (lat, lon) o [lat, lon].
@@ -707,6 +722,8 @@ def run_with_coordinates(COORDINATE_INIZIO_input, COORDINATE_FINE_input,
     #TODO in futuro l'utente potrà sovrascrivere questi valori passandoli a questa funzione che teoricamente vengono dall'account loggato
     global COORDINATE_INIZIO, COORDINATE_FINE
     global NOME_UTENTE, PROBLEMATICA_UTENTE
+    global Browser
+    Browser = Browser_input
 
     # opzionali (se vuoi renderli variabili senza cambiare il resto)
     global directory_risultati #TODO ora non dovrebbe servire
@@ -735,22 +752,6 @@ def run_with_coordinates(COORDINATE_INIZIO_input, COORDINATE_FINE_input,
     COORDINATE_FINE   = [round(b_lon, 6), round(b_lat, 6)]
 
     return main() #eseguo il main con queste vars
-
-#TODO forse questo wrapper è piu minimale e funziona
-'''def run_with_coordinates(COORDINATE_INIZIO_input, COORDINATE_FINE_input):
-    """
-    COORDINATE_*_input sono in formato (lat, lon) o [lat, lon].
-    Il routingProgram internamente usa [lon, lat] per ORS: qui settiamo già così.
-    """
-    global COORDINATE_INIZIO, COORDINATE_FINE
-
-    a_lat, a_lon = float(COORDINATE_INIZIO_input[0]), float(COORDINATE_INIZIO_input[1])
-    b_lat, b_lon = float(COORDINATE_FINE_input[0]), float(COORDINATE_FINE_input[1])
-
-    COORDINATE_INIZIO = [round(a_lon, 6), round(a_lat, 6)]  # [lon, lat]
-    COORDINATE_FINE   = [round(b_lon, 6), round(b_lat, 6)]  # [lon, lat]
-
-    return main()'''
 
 
 if __name__ == "__main__":
