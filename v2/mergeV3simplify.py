@@ -1,5 +1,6 @@
 import os
 import requests
+import routingProgram
 
 URL = os.getenv("OTP_URL", "http://localhost:8080/otp/transmodel/v3")
 HEADERS = {"Content-Type": "application/json"}
@@ -77,9 +78,11 @@ def get_place_coord(place: dict):
 
     return (float(lat), float(lon))
 
-def extract_walk_legs(patterns):
+def extract_walk_legs_and_print_public_transports(patterns):
     """
     Ritorna una lista di dict, uno per ogni leg WALK: (isola le walking legs per darle a ors)
+    e stampa le altre legs (trasporto pubblico)
+    TODO per ora solo stampa, poi potrei provare a passare a routingProgram.aggiungiMezzoPubblico(...))
     [
     {"itinerary_idx": 1, "leg_idx": 2, "from_name": "...", "to_name": "...", "from": (lat,lon), "to": (lat,lon)},
     ...
@@ -94,16 +97,36 @@ def extract_walk_legs(patterns):
     itinerary_idx = 1
 
     for leg_idx, leg in enumerate(p.get("legs") or [], 1):
-        mode = (leg.get("mode") or "").upper()
-        if mode != "FOOT":
-            continue
-
         fp = leg.get("fromPlace") or {}
         tp = leg.get("toPlace") or {}
 
         a = get_place_coord(fp)
         b = get_place_coord(tp)
         if not a or not b:
+            print(f"Leg {leg_idx} manca di coordinate valide")
+            exit(-1)
+        
+        mode = (leg.get("mode") or "").upper()
+
+        if mode != "FOOT":
+            #per ogni leg che non è di tipo WALK, stampo solo una linea del mezzo pubblico
+            print(f"\nLeg {leg_idx} non è FOOT: {mode} quindi la stampo ma non la passo a ORS.")
+            #TODO avvia la funzione routingProgram.aggiungiMezzoPubblico(...)
+            if a and b:
+                line = leg.get("line") or {}
+                code = line.get("publicCode") or ""
+                name = line.get("name") or ""
+                nome_linea = (f"{code} {name}").strip() or "Linea sconosciuta"
+
+                # tipologia mezzo: metro/bus/tram/rail ecc. (usa mode lowercase)
+                tipologia_mezzo = mode.lower()
+
+                routingProgram.aggiungiMezzoPubblico(
+                    inizio=a,
+                    fine=b,
+                    tipologia_mezzo=tipologia_mezzo,
+                    nome_linea=nome_linea
+                )
             continue
 
         walk_legs.append({
@@ -122,12 +145,11 @@ def ORS_call_and_draw(patterns):
     Per ogni leg di tipo WALK del primo pattern,
     chiama ORS per calcolare il percorso pedonale e disegna.
     """
-    walk_legs = extract_walk_legs(patterns) #estrae solo dal primo path
+    walk_legs = extract_walk_legs_and_print_public_transports(patterns) #estrae solo dal primo path
     if not walk_legs:
         print("Nessuna WALK leg trovata.")
         return
 
-    import routingProgram
     Ultima_Leg=0 #0 per non far aprire il browser, diventa 1 nell'ultima leg WALK
     #le wl sono coppie di coordinate (lat, lon) con i nomi dei posti di partenza e arrivo
     for k, wl in enumerate(walk_legs, 1): 
@@ -221,7 +243,7 @@ def main():
             a_coord = fmt_coord(fp)
             b_coord = fmt_coord(tp)
 
-            if mode == "WALK":
+            if mode == "FOOT":
                 print(f" {j}. 🚶 {a_name} {a_coord} → {b_name} {b_coord}")
             else:
                 line = leg.get("line") or {}
