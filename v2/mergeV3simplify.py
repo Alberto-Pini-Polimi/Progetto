@@ -128,7 +128,7 @@ def ORS_call_and_draw(patterns):
         return
 
     import routingProgram
-    Browser=0 #0 per non aprire il browser, diventa 1 nell'ultima leg WALK
+    Ultima_Leg=0 #0 per non far aprire il browser, diventa 1 nell'ultima leg WALK
     #le wl sono coppie di coordinate (lat, lon) con i nomi dei posti di partenza e arrivo
     for k, wl in enumerate(walk_legs, 1): 
         a = wl["from"]  # (lat, lon)
@@ -137,7 +137,7 @@ def ORS_call_and_draw(patterns):
         print(f"\n[{k}/{len(walk_legs)}] WALK leg: {wl['from_name']} -> {wl['to_name']} | {a} -> {b}")
         if k==len(walk_legs):
             #Questa è l'ultima leg WALK, apro browser con tutte le leg WALK precedenti
-            Browser=1
+            Ultima_Leg=1
 
         # passa (lat, lon) a ORS e disegna
         routingProgram.run_with_coordinates(
@@ -145,7 +145,7 @@ def ORS_call_and_draw(patterns):
             COORDINATE_FINE_input=b,
             #NOME_UTENTE_input="Utente",
             PROBLEMATICA_UTENTE_input=routingProgram.ProblemiMobilità.MOTORIA,
-            Browser_input=Browser
+            Ultima_Leg_input=Ultima_Leg
         )
 
 def main():
@@ -232,7 +232,7 @@ def main():
 
 
     #DA QUA AVVIENE IL COLLEGAMENTO CON SCRIPT DI ALBERTO
-    #chiamo una funzione a cui passo le coordinate delle walking legs e i nomi delle linee con salita e discesa.
+    #chiamo una funzione a cui passo le coordinate delle legs e i nomi delle linee con salita e discesa.
     #questa funzione chiama ORS per calcolare la polyline pedonale, poi applica il matching OSM e disegna
     ORS_call_and_draw(patterns) #TODO dare la possibilita a un utente di scegliere quale itinerario scegliere tra i path di osm
 

@@ -48,7 +48,7 @@ class TipoElemento(Enum):
         """Metodo per serializzare l'Enum in JSON."""
         return self.value
 
-Browser=1 #1 per aprire il browser. SERVE SOLO SE VUOI RUNNARE routingProgram.py DA SOLO, altrimenti viene sovrascritto da mergeV3simplify.py
+Ultima_Leg=1 #1 per aprire il browser. SERVE SOLO SE VUOI RUNNARE routingProgram.py DA SOLO, altrimenti viene sovrascritto da mergeV3simplify.py
 
 # input principali da parte dell'utente
 
@@ -404,6 +404,10 @@ class MappaFolium:
             print(f"Errore nel salvataggio della mappa: {e}")
             return False
 
+    def apriMappa(self, nome_file):
+        path = os.path.realpath(nome_file)
+        webbrowser.open('file://' + path)
+
 #un'unica mappa per piu run
 _MAPPA_SINGLETON = None
 def get_mappa_singleton(centro=(45.4642, 9.1900), zoom_start=12):
@@ -413,8 +417,9 @@ def get_mappa_singleton(centro=(45.4642, 9.1900), zoom_start=12):
         #TODO opzionale aggiungi controllo layer
     return _MAPPA_SINGLETON
 
-def creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_file):
-     # Crea la mappa
+def aggiornaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_file):
+    """questa funzione era creaEDisegnaMappa, ma in realtà ora si occupa solo di aggiornarla e la si stampa alla fine"""
+    # Crea la mappa
     centro_percorso = percorso.percorso_geo.centroid
     #crea la prima mappa o recupera la precedente
     mappa = get_mappa_singleton((centro_percorso.y, centro_percorso.x))
@@ -459,9 +464,6 @@ def creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_fi
     # Salva la mappa sovrascrivendo quella precedente
     mappa.salvaMappa(mappa_file)
     #print(f"Mappa del percorso salvata in: {mappa_file}")
-    
-    if Browser == 1:
-        webbrowser.open('file://' + os.path.realpath(mappa_file))
 
     return
 
@@ -529,7 +531,7 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
     """
         Calcola uno o più percorsi pedonali usando OpenRouteService
     """
-    print(f"cerco la key partendo da {os.getcwd()}")
+    #print(f"cerco la key partendo da {os.getcwd()}")
     ORS_API_KEY = open("./v2/Keys/API_KEY.txt", 'r').read().strip()
     # Controllo validità coordinate
     if len(inizio) != 2 or len(fine) != 2:
@@ -592,7 +594,7 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
     try:
         import time 
         import random
-        time.sleep(random.uniform(0, 2)) #aggiungo un piccolo delay per evitare di fare troppe chiamate in poco tempo (e rischiare di essere bloccati)
+        time.sleep(random.uniform(0, 1)) #(TODO rimuovi?) aggiungo un piccolo delay per evitare di fare troppe chiamate in poco tempo (e rischiare di essere bloccati)
 
         call = requests.post('https://api.openrouteservice.org/v2/directions/foot-walking/json', json=body, headers=headers)
         call.raise_for_status()
@@ -650,14 +652,16 @@ def main():
     print(f"Risultato:\n - {len(barriere)} barriere\n - {len(facilitatori)} facilitatori\n - {len(infrastrutture)} infrastrutture\ntrovati sul percorso")
 
     # una volta trovati tutti gli elementi necessari basta disegnare la mappa
-    creaEDisegnaMappa(percorso, barriere, facilitatori, infrastrutture, "mappa_standard.html")
+    aggiornaMappa(percorso, barriere, facilitatori, infrastrutture, "mappa.html")
 
     # se la mappa non ha alcuna barriera allora ho finito
     if len(barriere) == 0:
+        if Ultima_Leg == 1: #se era anche l ultima leg stampo
+            mappa=get_mappa_singleton()
+            mappa.apriMappa("mappa.html")
         return
-    # altrimenti provo a rimuovere queste barriere in 2 modi:
-    #  1. iterazioni consecutive
-    #  2. evitando tutte le barriere nella bbox
+    # altrimenti itero cercando di migliorare il percorso evitando le barriere trovate finché ne trovo
+    # o finché non arrivo ad un numero di iterazioni massimo (per evitare loop infiniti)
 
     """ ------------ 1. ITERAZIONI ------------ """
     # tendenzialmente rimuove tutte le barriere, ma non è mai detto con certezza
@@ -668,10 +672,11 @@ def main():
     # faccio la stessa cosa per il percorso calcolato precedentemente
     tutte_barriere_da_evitare = barriere
     for i in range(NUMERO_DI_ITERAZIONI):
+        nBarrierePrecedenti = len(barriere)
         # calcolo il nuovo percorso mettendo 
         percorso2 = Percorso(chiamataAPIdiORS(inizio, fine, tutte_barriere_da_evitare)[0])
 
-        # aggiungere caricaElementiDaJSON (nella nuova bbox)
+        # aggiungere caricaElementiDaJSON (nella nuova bbox)... credo sia TODO, chiederò ad albi che sa come funziona bene il db
 
         # dal percorso calcolato trovo tutte le barriere
         barriere, facilitatori, infrastrutture = percorso2.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
@@ -679,16 +684,31 @@ def main():
         # se non ci sono più barriere → fermati
         if len(barriere) == 0:
             print(f"Nessuna barriera trovata all'iterazione {i+1}, stop.")
+            aggiornaMappa(percorso2, barriere, facilitatori, infrastrutture, "mappa.html")
+            if Ultima_Leg == 1: #se era anche l ultima leg stampo
+                mappa=get_mappa_singleton()
+                mappa.apriMappa("mappa.html")
             break
+
+        # se ho trovato meno barriere rispetto all'iterazione precedente allora aggiungo il path
+        if len(barriere) < nBarrierePrecedenti: 
+            aggiornaMappa(percorso2, barriere, facilitatori, infrastrutture, "mappa.html")
+
+        # se sta finendo il for e non ho ancora trovato un percorso senza barriere
+        # mi arrendo e stampo tutti i tracciati ottenuti fino ad ora
+        if i == NUMERO_DI_ITERAZIONI - 1:
+            if Ultima_Leg == 1: #se era anche l ultima leg stampo
+                mappa=get_mappa_singleton()
+                mappa.apriMappa("mappa.html")
 
         for barriera in barriere:
             if barriera not in tutte_barriere_da_evitare:
                 tutte_barriere_da_evitare.append(barriera)
 
-    # infine creo la mappa 
-    creaEDisegnaMappa(percorso2, barriere, facilitatori, infrastrutture, "mappa_con_poche_barriere_tramite_iterazione.html")
+    
 
     """ ------------ 2. BOUNDING BOX ------------ """
+    '''
     # ora provo a fare un altro percorso togliendo tutte le barriere all'interno della bbox
     # in questo modo con una sola chiamata trovo un percorso senza barriere
     # il problema è che la richiesta potrebbe essere troppo lunga (dato la quantità di barriere da evitare)
@@ -708,15 +728,14 @@ def main():
         # trovo come al solito tutti i tipi di elementi da quelli caricati
         barriere, facilitatori, infrastrutture = percorsoSenzaBarriereDellaBbox.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, utente)
         # e lo disegno
-        creaEDisegnaMappa(percorsoSenzaBarriereDellaBbox, barriere, facilitatori, infrastrutture, "mappa_senza_barriere_della_bbox.html")
+        creaEDisegnaMappa(percorsoSenzaBarriereDellaBbox, barriere, facilitatori, infrastrutture, "mappa_senza_barriere_della_bbox.html", 1)
     else:
         print("La richiesta con tutte le barriere da evitare è troppo grande quindi questa mappa non verrà considerata tra i candidati")
-
-    #TODO qua siamo a fine main hence avvio creaedisegna solo sul miglior path trovato
+'''
 
 def run_with_coordinates(COORDINATE_INIZIO_input, COORDINATE_FINE_input,
                          NOME_UTENTE_input=None, PROBLEMATICA_UTENTE_input=None,
-                         mappa_file_input=None, directory_risultati_input=None, Browser_input=0):
+                         mappa_file_input=None, directory_risultati_input=None, Ultima_Leg_input=0):
     """
     Wrapper MINIMALE per riusare routingProgram.
     Accetta coordinate in formato (lat, lon) o [lat, lon].
@@ -727,8 +746,8 @@ def run_with_coordinates(COORDINATE_INIZIO_input, COORDINATE_FINE_input,
     #TODO in futuro l'utente potrà sovrascrivere questi valori passandoli a questa funzione che teoricamente vengono dall'account loggato
     global COORDINATE_INIZIO, COORDINATE_FINE
     global NOME_UTENTE, PROBLEMATICA_UTENTE
-    global Browser
-    Browser = Browser_input
+    global Ultima_Leg
+    Ultima_Leg = Ultima_Leg_input
 
     # opzionali (se vuoi renderli variabili senza cambiare il resto)
     global directory_risultati #TODO ora non dovrebbe servire
