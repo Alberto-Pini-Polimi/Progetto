@@ -1,0 +1,7 @@
+"from_stop_id","to_stop_id","transfer_type","min_transfer_time"
+"LORETO M1","LORETO M2","0",""
+"LORETO M2","LORETO M1","0",""
+"CADORNA FN M1","CADORNA FN M2","0",""
+"CADORNA FN M2","CADORNA FN M1","0",""
+"DUOMO M1","DUOMO M3","0",""
+"DUOMO M3","DUOMO M1","0",""
