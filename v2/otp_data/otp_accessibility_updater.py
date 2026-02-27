@@ -33,12 +33,18 @@ class FromTo(Enum):
     #  - differenziare tra molteplici linee di una stazione (anche se una stazione ha 2 linee nei dati estratti dallo scraper ci sono 2 stazioni indipendenti con lo stesso nome)
     #  - creare dei valori dell'enum che definiscono la direzione opposta (CITY_TO_MEZZANINO da la stessa info di MEZZANINO_TO_CITY). Assumo tutti i servizi siano bidirezionali
     # poi ci sono quelle composte solo per la comodità dell'utente che utilizza la funzione isAccessible
-    CITY_TO_PLATFORM = 3
+    CITY_TO_PLATFORM = 3 # this is the composit version (1+2 or occasionally 7+6+2). The direct one is 8
 
     PLATFORM_TO_PLATFORM = 4 # questo è particolare perchè non tiene conto di:
     #  - fermate tipo piola che hanno un collegamento diretto tra i binari dato che la banchina è la stessa
     #  - ritorna True anche se le due specifiche piattaforme che interessano all'utente sono effettivamente collegate in modo accessibile (dato che c'è un altro binario che non è collegato in modo accessibile)
     # TODO: creare una funzione solo per questo platform to platform
+
+    # poi ce ne sono altri molto rari ma cmq presenti:
+    OVERPASS = 5 # questo c'è solo in pochissime fermate lontane dal centro di milano
+    INTERMEDIO_TO_MEZZANINO = 6
+    CITY_TO_INTERMEDIO = 7
+    CITY_TO_PLATFORM_DIRECT = 8
 
 # funzione che calcola l'accessibilità di una stazione per uno specifico percorso all'interno della stessa
 def isAccessible(station, fromTo, platformDirection=None):
@@ -94,7 +100,31 @@ def isAccessible(station, fromTo, platformDirection=None):
                             return False # altrimenti false
             return False
         
-        # TODO: aggiungere anche gli altri casi!!
+        elif fromTo == FromTo.OVERPASS:
+            # comune a tutta la stazione
+            segment = next((s for s in directions[0]["segments"] if s["from_to_type"] == FromTo.OVERPASS.value), None)
+            return any(opt["is_working"] for opt in segment["options"]) if segment else False
+
+        elif fromTo == FromTo.INTERMEDIO_TO_MEZZANINO:
+            # per stazioni a più livelli (es. Sondrio)
+            segment = next((s for s in directions[0]["segments"] if s["from_to_type"] == FromTo.INTERMEDIO_TO_MEZZANINO.value), None)
+            return any(opt["is_working"] for opt in segment["options"]) if segment else False
+
+        elif fromTo == FromTo.CITY_TO_INTERMEDIO:
+            segment = next((s for s in directions[0]["segments"] if s["from_to_type"] == FromTo.CITY_TO_INTERMEDIO.value), None)
+            return any(opt["is_working"] for opt in segment["options"]) if segment else False
+
+        elif fromTo == FromTo.CITY_TO_PLATFORM_DIRECT:
+            # diretto strada-banchina: richiede la direzione specifica!!
+            if platformDirection == None: 
+                return None # quindi conrollo come al solito
+            for direction in directions:
+                if direction["direction_name"] == platformDirection:
+                    segment = next((s for s in direction["segments"] if s["from_to_type"] == FromTo.CITY_TO_PLATFORM_DIRECT.value), None)
+                    return any(opt["is_working"] for opt in segment["options"]) if segment else False
+            return False
+
+    return False
 
 
 
@@ -109,7 +139,7 @@ if __name__ == "__main__":
 
     print("arrivare al mezzanino: " + isAccessible(stazione, FromTo.CITY_TO_MEZZANINO))
     print("dal mezzanino in direzione A: " + isAccessible(stazione, FromTo.MEZZANINO_TO_PLATFORM, "Assago Milanofiori Forum/Abbiategrasso"))
-    print("dal mezzanino in direzione A: " + isAccessible(stazione, FromTo.MEZZANINO_TO_PLATFORM, "Cologno Nord/Gessate"))
+    print("dal mezzanino in direzione B: " + isAccessible(stazione, FromTo.MEZZANINO_TO_PLATFORM, "Cologno Nord/Gessate"))
     print(isAccessible(stazione, FromTo.PLATFORM_TO_PLATFORM))
 
 
