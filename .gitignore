@@ -1,1 +1,8 @@
 API_KEY.txt
+v2/otp_data/Milano-gtfs/agency.txt
+v2/otp_data/Milano-gtfs/calendar_dates.txt
+v2/otp_data/Milano-gtfs/calendar.txt
+.gitignore
+v2/otp_data/Milano-gtfs/routes.txt
+v2/otp_data/Milano-gtfs/shapes.txt
+v2/otp_data/Milano-gtfs/feed_info.txt
