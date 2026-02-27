@@ -532,7 +532,7 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
         Calcola uno o più percorsi pedonali usando OpenRouteService
     """
     #print(f"cerco la key partendo da {os.getcwd()}")
-    ORS_API_KEY = open("./v2/Keys/API_KEY.txt", 'r').read().strip()
+    ORS_API_KEY = open("Keys/API_KEY.txt", 'r').read().strip()
     # Controllo validità coordinate
     if len(inizio) != 2 or len(fine) != 2:
         print("Coordinate di inizio o fine non valide")
