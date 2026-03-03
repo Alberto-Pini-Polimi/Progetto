@@ -97,7 +97,6 @@ project_to_wgs = Transformer.from_crs(utm_zone, wgs84, always_xy=True).transform
 def inverti_coordinate(coord):
     return coord[1], coord[0]
 
-
 class Utente():
 
     def __init__(self, nickname, problema_di_mobilità, tipologia_di_elemento_da_includere_sempre=None, tipologia_di_elemento_da_evitare_sempre=None):
@@ -414,7 +413,6 @@ def get_mappa_singleton(centro=(45.4642, 9.1900), zoom_start=12):
     global _MAPPA_SINGLETON
     if _MAPPA_SINGLETON is None:
         _MAPPA_SINGLETON = MappaFolium(centro=centro, zoom_start=zoom_start)
-        #TODO opzionale aggiungi controllo layer
     return _MAPPA_SINGLETON
 
 def aggiornaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_file):
@@ -576,9 +574,7 @@ def aggiungiMezzoPubblico(inizio, fine, tipologia_mezzo, nome_linea, mappa=None)
         icon=_div_label(f'⬇️ Scendi da "{linea}"', dx_px=10, dy_px=-10)
     ).add_to(mappa.mappa)
 
-    #TODO debug to be removed once it shows sali scendi correttamente
     mappa.salvaMappa("mappa.html")
-    mappa.apriMappa("mappa.html")
     return
 
 def caricaElementiDaJSON(directory_risultati, bbox, utente):
@@ -726,7 +722,7 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
         elif call.status_code == 403:
             print("Accesso negato")
         elif call.status_code == 413:
-            print("Richiesta troppo grande!") #TODO non deve fare exit, forse basta cosi?
+            print("Richiesta troppo grande!") #TODO ho messo return al posto di exit. DA TESTARE
             return None
         elif call.status_code == 400:
             print("Richiesta malformata, controlla i parametri inviati")
@@ -734,6 +730,7 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
     except Exception as e:
         print(f"Altro errore nel calcolo del percorso: {e}")
         exit(-1)
+
 
 
 def main():
