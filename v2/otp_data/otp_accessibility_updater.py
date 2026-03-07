@@ -3,10 +3,14 @@
 
 from enum import Enum
 import requests
+import csv # per leggere e scrivere facilmente su stops.txt
+import os
 
 # qui è dove lo scraper mette i dati ogni ora
 DATA_URL = "https://raw.githubusercontent.com/Alberto-Pini-Polimi/ISB_ATM-scraper/main/data/stations.json"
 
+# reference al path dove si trova stops.txt
+FILE_STOPS = "Milano-gtfs/stops.txt"
 
 
 # funzione per estrarre i dati ed averli come maneggevole oggetto python
@@ -46,6 +50,9 @@ class FromTo(Enum):
     CITY_TO_INTERMEDIO = 7
     CITY_TO_PLATFORM_DIRECT = 8
 
+    # questo è esattamente uguale a PLATFORM_TO_PLATFORM ma è da intendere per capire se una stazione è completamente accessibile dal mezzanino
+    MEZZANINO_TO_ALL_PLATFORMS = 9
+
 class Station:
     """
     Rappresenta una stazione della metropolitana con i suoi dati di accessibilità.
@@ -82,7 +89,7 @@ class Station:
                 print(f"❌ Dal/al mezzanino alla/dalla banchina in direzione {d["direction_name"]}")
         
         # si può passare da una banchina all'altra
-        print(f"{stazione.isAccessible(FromTo.PLATFORM_TO_PLATFORM)} Da banchina a banchina")
+        print(f"{'✅' if self.isAccessible(FromTo.PLATFORM_TO_PLATFORM) else '❌'} Da banchina a banchina")
 
 
     def isAccessible(self, fromTo, platformDirection=None):
@@ -96,7 +103,8 @@ class Station:
             # city-->platform = city-->mezzanino * mezzanino-->platform
             return self.isAccessible(FromTo.CITY_TO_MEZZANINO) and self.isAccessible(FromTo.MEZZANINO_TO_PLATFORM, platformDirection)
 
-        elif fromTo == FromTo.PLATFORM_TO_PLATFORM:
+        elif fromTo == FromTo.PLATFORM_TO_PLATFORM or fromTo == FromTo.MEZZANINO_TO_ALL_PLATFORMS:
+            # questo lo uso anche per capire se una stazione è completamente accessibile (scrivendolo nel stops.txt)
             # qui non c'è bisogno di specificare una piattaforma dato che servono entrambe e sono immagazzinate nell'oggetto di stazione
             # per ogni direzione che contine la stazione
             for direction in self.directions:
@@ -167,46 +175,99 @@ class Station:
 
         return False
 
+    def definedAsAccessible(self):
+        """metodo che stabilisce se sul file stops.txt una stazione è definita come accessibile o meno"""
+
+        # questa è la condizione che può facilmente essere modificata
+        # in questo caso faccio una valutazione conservativa controllando l'accessibilità da e per tutte le banchine
+        if self.isAccessible(FromTo.CITY_TO_MEZZANINO) and self.isAccessible(FromTo.MEZZANINO_TO_ALL_PLATFORMS):
+            return True
+        # se anche solo una banchina non è accessibile allora la valutazione conservativa la da come stazione non accessibile
+        return False
+
+
 
 
 
 if __name__ == "__main__":
 
-    # prendo i dati dallo scraper:
-    data = getData(DATA_URL)
+    print("Recupero i dati dallo scraper...")
+    data = getData(DATA_URL) # prendo i dati dello scraper
 
-    if data:
-        # Trovo il dizionario della stazione
-        stazione_dict = next((s for s in data if s["station_name"].upper() == "pero".upper()), None)
-        
-        if stazione_dict:
-            # istanzio la stazione
-            stazione = Station(stazione_dict)
-            # e stampo i dettagli
-            stazione.printDetails()
-            stazione.printAccessibility() # anche in termini di accessibilità
+    if not data:
+        print("Impossibile accedere ai dati")
+        exit(-1)
 
-        else:
-            print("Stazione non trovata")
-    else:
-        print("Impossibile accedere ai dati.")
-
-
-
-
-
-
-
+    # dizionario di stazioni estratte dai dati dello scraper:
+    #   chiave: nome stazione in maiuscolo (es. "PIOLA"), 
+    #   valore: oggetto Station
+    stationsDictionary = {s["station_name"].upper(): Station(s) for s in data}
 
     
-    # decido la stazione su cui analizzare l'accessibilità
-    # print("stazioni:")
-    # for station in data:
-    #     print(f"{station.get('station_name')} - {station.get('line')}")
+    
+    # controllo che il file CSV esista nella stessa directory
+    if not os.path.exists(FILE_STOPS):
+        print(f"Errore: Il file {FILE_STOPS} non è stato trovato nella cartella corrente.")
+        exit(-1)
 
+    # tengo traccia di cosa modifico così che alla fine posso scrivere le modifche sul file
+    updatesToFile = [] 
 
-        # per ogni stazione devo vedere le direzioni per mapparle alla riga del file stops.txt
+    # apro in lettura il file stops.txt
+    with open(FILE_STOPS, mode='r', encoding='utf-8') as file:
+        # DictReader ci permette di interagire con le colonne usando il loro nome
+        reader = csv.DictReader(file, quotechar='"')
+        fieldnames = reader.fieldnames # Salviamo l'intestazione originale
 
+        for row in reader:
 
+            # devo assicurarmi che sia una fermata della metro quella che ho trovato nella row del file CSV
+            # capisco che è uno stop della metro perchè il suo id non è numerico
+            if row["stop_id"].isdigit():
+                updatesToFile.append(row) # però mi salvo cmq la linea
+                continue
 
-    # poi in realtà lo dovrò fare con tutte per riscrivere i dati estratti all'interno di stops.txt
+            # prendo il nome della stazione in stops.txt
+            stopNameCSV = row["stop_name"].upper()
+            
+            # ricerchiamo la stazione corrispondente nei dati dello scraper.
+            matchedStation = None
+            for stopNameScraper, stationObject in stationsDictionary.items():
+                # se il nome della stazione scrapata è contenuto in quello di stops.txt o viceversa
+                # per esempio il caso in cui il CSV abbia "CADORNA FN M1" e lo scraper abbia solo "CADORNA" 
+                if stopNameScraper in stopNameCSV or stopNameCSV in stopNameScraper:
+                    matchedStation = stationObject
+                    break
+            
+            # se troviamo la stazione del file CSV, gli aggiorniamo il campo "wheelchair_boarding"
+            # la scrittura avvine dopo la ricerca intera per questioni di performance
+            if matchedStation:
+                # per lo standard GTFS:
+                # 1 = Accessibile, 2 = Non accessibile (0 o vuoto = info non disponibile)
+                # faccio il controllo col metodo definedAsAccessible() definito nella classe
+                row["wheelchair_boarding"] = "1" if matchedStation.definedAsAccessible() else "2"
+            
+            # mi salvo le righe aggiornate
+            updatesToFile.append(row)
+
+    # riscrivo il file stops.txt con le righe aggiornate
+    with open(FILE_STOPS, mode='w', encoding='utf-8') as outfile:
+        # scriviamo l'intestazione forzando le virgolette
+        headerLine = ",".join(f'"{col}"' for col in fieldnames) + "\n"
+        outfile.write(headerLine)
+
+        # scrivo ogni riga formattata in modo da mettere le "virgolette" solo se il campo non è vuoto
+        for row in updatesToFile:
+            rowValues = [] # traccio i valori della riga
+            for col in fieldnames: # per ogni colonna
+                val = row.get(col, "") # prendo il suo valore
+                # se il campo contiene qualcosa aggiungiamo le virgolette, 
+                # altrimenti lo lasciamo completamente vuoto
+                if val != "":
+                    rowValues.append(f'"{val}"')
+                else:
+                    rowValues.append("")
+                    
+            outfile.write(",".join(rowValues) + "\n") # finalmente scrivo sul file
+            
+    print("Bon, finì")
