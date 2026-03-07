@@ -46,85 +46,126 @@ class FromTo(Enum):
     CITY_TO_INTERMEDIO = 7
     CITY_TO_PLATFORM_DIRECT = 8
 
-# funzione che calcola l'accessibilità di una stazione per uno specifico percorso all'interno della stessa
-def isAccessible(station, fromTo, platformDirection=None):
-    
-    # questi if mappano le richieste di accessibilità composte in richieste elementari
-    if fromTo == FromTo.CITY_TO_PLATFORM:
-        # platform dev'essere per forza definita:
-        if platformDirection == None: 
-            return None
-        # city-->platform = city-->mezzanino * mezzanino-->platform
-        return isAccessible(station, FromTo.CITY_TO_MEZZANINO) and isAccessible(station, FromTo.MEZZANINO_TO_PLATFORM, platformDirection)
+class Station:
+    """
+    Rappresenta una stazione della metropolitana con i suoi dati di accessibilità.
+    """
+    def __init__(self, raw_data):
+        self.raw_data = raw_data
+        self.name = raw_data.get("station_name", None)
+        self.line = raw_data.get("line", None)
+        self.atm_id = raw_data.get("atm_id", None)
+        self.directions = raw_data.get("directions", [])
 
-    elif fromTo == FromTo.PLATFORM_TO_PLATFORM:
-        # qui non c'è bisogno di specificare una piattaforma dato che servono entrambe e sono immagazzinate nell'oggetto di stazione
-        # per ogni direzione che contine la stazione
-        for direction in station["directions"]:
-            if not isAccessible(station, FromTo.MEZZANINO_TO_PLATFORM, direction["direction_name"]):
-                return False # se trovo anche solo un segmento mezzanino fino alla banchina che non è accessibile allora lo scalo non si può fare
-        return True # altrimenti lo scalo si può fare senza problemi
+    def printDetails(self):
+        """Stampa a schermo i dettagli principali della stazione."""
+        print(f"\nSTAZIONE: {self.name} ({self.line})")
+        print(f"ID ATM: {self.atm_id}")
+        direzioni_nomi = [d.get("direction_name") for d in self.directions]
+        print(f"Direzioni disponibili: {', '.join(direzioni_nomi) if direzioni_nomi else 'Nessuna'}")
 
-    else: # d'ora in poi saranno solo richieste semplici...
+    def printAccessibility(self):
+        """stampo cose principali da sapere per l'accessibilità a quella stazione"""
 
-        # quindi devo estrarre le direzioni a prescindere:
-        directions = station["directions"]
-        # ovviamente non dev'essere null
-        if directions == None:
-            return None
-
-        if fromTo == FromTo.CITY_TO_MEZZANINO:
-            # prendo una delle due direzioni a caso tanto è indifferente (prendo sempre la prima dato che ce ne sono sempre almeno 2 e quindi almeno 1)
-            # e vedo se c'è un segmento che dalla strada esterna va al mezzanino
-            segment = next((s for s in directions[0]["segments"] if s["from_to_type"] == FromTo.CITY_TO_MEZZANINO.value), None)
-            # ora devo controllare che ci sia almeno una opzione funzionante
-            for option in segment["options"]:
-                if option["is_working"]: # se c'è almeno un'opzione funzionante
-                    return True # allora ritorno true
-            return False # altrimenti false
-
-        elif fromTo == FromTo.MEZZANINO_TO_PLATFORM:
-            # come prima la piattaforma dev'essere definita
-            if platformDirection == None:
-                return None
-            # ora devo controllare che la direzione che mi viene data corrisponda ad una direzione esistente
-            for direction in directions:
-                if direction["direction_name"] == platformDirection:
-                    # a questo punto prendo quella direzione in questione e faccio più o meno le stesse cose di CITY_TO_MEZZANINO
-                    for segment in direction["segments"]:
-                        if segment["from_to_type"] == FromTo.MEZZANINO_TO_PLATFORM.value:
-                            # ora devo controllare che ci sia almeno una opzione funzionante
-                            for option in segment["options"]:
-                                if option["is_working"]: # se c'è almeno un'opzione funzionante
-                                    return True # allora ritorno true
-                            return False # altrimenti false
-            return False
+        # mezzanino accessibile?
+        if self.isAccessible(FromTo.CITY_TO_MEZZANINO):
+            print("✅ Arrivare/Uscire al/dal mezzanino")
+        else:
+            print("❌ Arrivare/Uscire al/dal mezzanino")
         
-        elif fromTo == FromTo.OVERPASS:
-            # comune a tutta la stazione
-            segment = next((s for s in directions[0]["segments"] if s["from_to_type"] == FromTo.OVERPASS.value), None)
-            return any(opt["is_working"] for opt in segment["options"]) if segment else False
+        # per ogni direzione
+        for d in self.directions:
+            # banchina accessibile dal mezzanino?
+            if self.isAccessible(FromTo.MEZZANINO_TO_PLATFORM, d["direction_name"]):
+                print(f"✅ Dal/al mezzanino alla/dalla banchina in direzione {d["direction_name"]}")
+            else:
+                print(f"❌ Dal/al mezzanino alla/dalla banchina in direzione {d["direction_name"]}")
+        
+        # si può passare da una banchina all'altra
+        print(f"{stazione.isAccessible(FromTo.PLATFORM_TO_PLATFORM)} Da banchina a banchina")
 
-        elif fromTo == FromTo.INTERMEDIO_TO_MEZZANINO:
-            # per stazioni a più livelli (es. Sondrio)
-            segment = next((s for s in directions[0]["segments"] if s["from_to_type"] == FromTo.INTERMEDIO_TO_MEZZANINO.value), None)
-            return any(opt["is_working"] for opt in segment["options"]) if segment else False
 
-        elif fromTo == FromTo.CITY_TO_INTERMEDIO:
-            segment = next((s for s in directions[0]["segments"] if s["from_to_type"] == FromTo.CITY_TO_INTERMEDIO.value), None)
-            return any(opt["is_working"] for opt in segment["options"]) if segment else False
-
-        elif fromTo == FromTo.CITY_TO_PLATFORM_DIRECT:
-            # diretto strada-banchina: richiede la direzione specifica!!
+    def isAccessible(self, fromTo, platformDirection=None):
+        """funzione che calcola l'accessibilità di una stazione per uno specifico percorso all'interno della stessa"""
+        
+        # questi if mappano le richieste di accessibilità composte in richieste elementari
+        if fromTo == FromTo.CITY_TO_PLATFORM:
+            # platform dev'essere per forza definita:
             if platformDirection == None: 
-                return None # quindi conrollo come al solito
-            for direction in directions:
-                if direction["direction_name"] == platformDirection:
-                    segment = next((s for s in direction["segments"] if s["from_to_type"] == FromTo.CITY_TO_PLATFORM_DIRECT.value), None)
-                    return any(opt["is_working"] for opt in segment["options"]) if segment else False
-            return False
+                return None
+            # city-->platform = city-->mezzanino * mezzanino-->platform
+            return self.isAccessible(FromTo.CITY_TO_MEZZANINO) and self.isAccessible(FromTo.MEZZANINO_TO_PLATFORM, platformDirection)
 
-    return False
+        elif fromTo == FromTo.PLATFORM_TO_PLATFORM:
+            # qui non c'è bisogno di specificare una piattaforma dato che servono entrambe e sono immagazzinate nell'oggetto di stazione
+            # per ogni direzione che contine la stazione
+            for direction in self.directions:
+                if not self.isAccessible(FromTo.MEZZANINO_TO_PLATFORM, direction["direction_name"]):
+                    return False # se trovo anche solo un segmento mezzanino fino alla banchina che non è accessibile allora lo scalo non si può fare
+            return True # altrimenti lo scalo si può fare senza problemi
+
+        else: # d'ora in poi saranno solo richieste semplici...
+
+            # quindi devo estrarre le direzioni a prescindere:
+            directions = self.directions
+            # ovviamente non dev'essere null
+            if directions == []:
+                return None
+
+            if fromTo == FromTo.CITY_TO_MEZZANINO:
+                # prendo una delle due direzioni a caso tanto è indifferente (prendo sempre la prima dato che ce ne sono sempre almeno 2 e quindi almeno 1)
+                # e vedo se c'è un segmento che dalla strada esterna va al mezzanino
+                segment = next((s for s in directions[0]["segments"] if s["from_to_type"] == FromTo.CITY_TO_MEZZANINO.value), None)
+                if not segment:
+                    return False
+                # ora devo controllare che ci sia almeno una opzione funzionante
+                for option in segment["options"]:
+                    if option["is_working"]: # se c'è almeno un'opzione funzionante
+                        return True # allora ritorno true
+                return False # altrimenti false
+
+            elif fromTo == FromTo.MEZZANINO_TO_PLATFORM:
+                # come prima la piattaforma dev'essere definita
+                if platformDirection == None:
+                    return None
+                # ora devo controllare che la direzione che mi viene data corrisponda ad una direzione esistente
+                for direction in directions:
+                    if direction["direction_name"] == platformDirection:
+                        # a questo punto prendo quella direzione in questione e faccio più o meno le stesse cose di CITY_TO_MEZZANINO
+                        for segment in direction["segments"]:
+                            if segment["from_to_type"] == FromTo.MEZZANINO_TO_PLATFORM.value:
+                                # ora devo controllare che ci sia almeno una opzione funzionante
+                                for option in segment["options"]:
+                                    if option["is_working"]: # se c'è almeno un'opzione funzionante
+                                        return True # allora ritorno true
+                                return False # altrimenti false
+                return False
+            
+            elif fromTo == FromTo.OVERPASS:
+                # comune a tutta la stazione
+                segment = next((s for s in directions[0]["segments"] if s["from_to_type"] == FromTo.OVERPASS.value), None)
+                return any(opt["is_working"] for opt in segment["options"]) if segment else False
+
+            elif fromTo == FromTo.INTERMEDIO_TO_MEZZANINO:
+                # per stazioni a più livelli (es. Sondrio)
+                segment = next((s for s in directions[0]["segments"] if s["from_to_type"] == FromTo.INTERMEDIO_TO_MEZZANINO.value), None)
+                return any(opt["is_working"] for opt in segment["options"]) if segment else False
+
+            elif fromTo == FromTo.CITY_TO_INTERMEDIO:
+                segment = next((s for s in directions[0]["segments"] if s["from_to_type"] == FromTo.CITY_TO_INTERMEDIO.value), None)
+                return any(opt["is_working"] for opt in segment["options"]) if segment else False
+
+            elif fromTo == FromTo.CITY_TO_PLATFORM_DIRECT:
+                # diretto strada-banchina: richiede la direzione specifica!!
+                if platformDirection == None: 
+                    return None # quindi conrollo come al solito
+                for direction in directions:
+                    if direction["direction_name"] == platformDirection:
+                        segment = next((s for s in direction["segments"] if s["from_to_type"] == FromTo.CITY_TO_PLATFORM_DIRECT.value), None)
+                        return any(opt["is_working"] for opt in segment["options"]) if segment else False
+                return False
+
+        return False
 
 
 
@@ -134,18 +175,21 @@ if __name__ == "__main__":
     # prendo i dati dallo scraper:
     data = getData(DATA_URL)
 
-    # per ora mi limito a prendere una singola stazione e controllo l'accessibilità al mezzanino ed a tutte le direzioni
-    stazione = next((s for s in data if s["station_name"] == "Piola"), None)
+    if data:
+        # Trovo il dizionario della stazione
+        stazione_dict = next((s for s in data if s["station_name"].upper() == "pero".upper()), None)
+        
+        if stazione_dict:
+            # istanzio la stazione
+            stazione = Station(stazione_dict)
+            # e stampo i dettagli
+            stazione.printDetails()
+            stazione.printAccessibility() # anche in termini di accessibilità
 
-    print("arrivare al mezzanino: " + isAccessible(stazione, FromTo.CITY_TO_MEZZANINO))
-    print("dal mezzanino in direzione A: " + isAccessible(stazione, FromTo.MEZZANINO_TO_PLATFORM, "Assago Milanofiori Forum/Abbiategrasso"))
-    print("dal mezzanino in direzione B: " + isAccessible(stazione, FromTo.MEZZANINO_TO_PLATFORM, "Cologno Nord/Gessate"))
-    print(isAccessible(stazione, FromTo.PLATFORM_TO_PLATFORM))
-
-
-
-
-
+        else:
+            print("Stazione non trovata")
+    else:
+        print("Impossibile accedere ai dati.")
 
 
 
