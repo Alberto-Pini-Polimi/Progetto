@@ -10,6 +10,7 @@ from enum import Enum
 import webbrowser
 from datetime import datetime
 import random
+from pathlib import Path
 
 class ProblemiMobilità(Enum):
 
@@ -49,6 +50,8 @@ class TipoElemento(Enum):
         return self.value
 
 Ultima_Leg=1 #1 per aprire il browser. SERVE SOLO SE VUOI RUNNARE routingProgram.py DA SOLO, altrimenti viene sovrascritto da mergeV3simplify.py
+# global per l'output delle mappe
+map_output_directory = Path(__file__).resolve().parent.parent / "mapOutputFolder" 
 
 # input principali da parte dell'utente
 
@@ -397,15 +400,16 @@ class MappaFolium:
     def salvaMappa(self, nome_file):
         """Salva la mappa in un file HTML"""
         try:
-            self.mappa.save(nome_file)
+            destinazione = map_output_directory / nome_file
+            self.mappa.save(destinazione)
             return True
         except Exception as e:
             print(f"Errore nel salvataggio della mappa: {e}")
             return False
 
     def apriMappa(self, nome_file):
-        path = os.path.realpath(nome_file)
-        webbrowser.open('file://' + path)
+        path = map_output_directory / nome_file
+        webbrowser.open(path.as_uri())
 
 #un'unica mappa per piu run
 _MAPPA_SINGLETON = None
@@ -737,7 +741,8 @@ def main():
 
     # ------------ INPUT ------------
 
-    directory_risultati = "v2/data"  # Directory dove sono salvati i risultati delle query Overpass
+    base = Path(__file__).resolve().parent
+    directory_risultati = base.parent / "v2/data" # Directory dove sono salvati i risultati delle query Overpass
     # definisco l'untete (sia il nome che la disabilità sono considerati nella fase di caricamento elementi dal DB)
     utente = Utente(NOME_UTENTE, PROBLEMATICA_UTENTE)
     # coordinate di inizio e fine
@@ -848,7 +853,7 @@ def main():
 
 def run_with_coordinates(COORDINATE_INIZIO_input, COORDINATE_FINE_input,
                          NOME_UTENTE_input=None, PROBLEMATICA_UTENTE_input=None,
-                         mappa_file_input=None, directory_risultati_input=None, Ultima_Leg_input=0):
+                         mappa_file_input=None, map_output_directory=None, Ultima_Leg_input=0):
     """
     Wrapper MINIMALE per riusare routingProgram.
     Accetta coordinate in formato (lat, lon) o [lat, lon].
@@ -873,8 +878,8 @@ def run_with_coordinates(COORDINATE_INIZIO_input, COORDINATE_FINE_input,
         PROBLEMATICA_UTENTE = PROBLEMATICA_UTENTE_input
 
     # se vuoi personalizzare output/dir senza toccare troppo codice:
-    if directory_risultati_input is not None:
-        directory_risultati = directory_risultati_input  # userai questa global se la aggiungi nel main
+    if map_output_directory is not None:
+        directory_risultati = map_output_directory  # userai questa global se la aggiungi nel main, OK agl'ordini!
     if mappa_file_input is not None:
         mappa_file = mappa_file_input  # idem
 
