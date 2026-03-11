@@ -97,7 +97,6 @@ project_to_wgs = Transformer.from_crs(utm_zone, wgs84, always_xy=True).transform
 def inverti_coordinate(coord):
     return coord[1], coord[0]
 
-
 class Utente():
 
     def __init__(self, nickname, problema_di_mobilità, tipologia_di_elemento_da_includere_sempre=None, tipologia_di_elemento_da_evitare_sempre=None):
@@ -414,7 +413,6 @@ def get_mappa_singleton(centro=(45.4642, 9.1900), zoom_start=12):
     global _MAPPA_SINGLETON
     if _MAPPA_SINGLETON is None:
         _MAPPA_SINGLETON = MappaFolium(centro=centro, zoom_start=zoom_start)
-        #TODO opzionale aggiungi controllo layer
     return _MAPPA_SINGLETON
 
 def aggiornaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_file):
@@ -465,6 +463,118 @@ def aggiornaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_file):
     mappa.salvaMappa(mappa_file)
     #print(f"Mappa del percorso salvata in: {mappa_file}")
 
+    return
+
+def aggiungiMezzoPubblico(inizio, fine, tipologia_mezzo, nome_linea, mappa=None):
+    """
+    disegna la tratta dei mezzi pubblici tra inizio e fine,
+    se in futuro si useranno piu mappe si potra passare quella desiderata
+
+    inizio/fine: (lat, lon)
+    tipologia_mezzo: es "metro", "bus", "tram", "treno"
+    nome_linea: es "M1", "Tram 2", "Bus 90/91"
+    """
+    if mappa is None:
+        mappa = get_mappa_singleton()
+
+    mezzo = str(tipologia_mezzo).lower()
+    linea = str(nome_linea).strip()
+
+    stile = {
+        "metro": {"color": "#8E44AD", "dash_array": "8,6", "weight": 6},
+        "bus":   {"color": "#2980B9", "dash_array": "4,6", "weight": 5},
+        "tram":  {"color": "#27AE60", "dash_array": "2,6", "weight": 5},
+        "treno": {"color": "#2C3E50", "dash_array": "10,8", "weight": 6},
+    }
+    s = stile.get(mezzo, {"color": "#E67E22", "dash_array": "6,6", "weight": 5})
+
+    start = (float(inizio[0]), float(inizio[1]))
+    end   = (float(fine[0]), float(fine[1]))
+
+    folium.PolyLine(
+        locations=[start, end],
+        color=s["color"],
+        weight=s["weight"],
+        opacity=0.9,
+        dash_array=s["dash_array"],
+        tooltip=f"{tipologia_mezzo} - {linea}"
+    ).add_to(mappa.mappa)
+
+    ''' QUESTA FUNZIONE SERVIREBBE PER AGGIUNGERE ANCHE LA LABEL IN MEZZO ALLA LINEA
+    # calcolo punto medio per etichetta
+    mid_lat = (start[0] + end[0]) / 2
+    mid_lon = (start[1] + end[1]) / 2
+
+    html_label = f"""
+    <div style="
+        font-size: 12px;
+        font-weight: bold;
+        color: black;
+        background-color: white;
+        padding: 2px 6px;
+        border-radius: 6px;
+        border: 1px solid black;
+        white-space: nowrap;
+    ">
+    🚍 {linea}
+    </div>
+    """
+
+    folium.Marker(
+        location=(mid_lat, mid_lon),
+        icon=folium.DivIcon(html=html_label)
+    ).add_to(mappa.mappa)
+    '''
+
+    folium.CircleMarker(
+        start,
+        radius=5,
+        weight=2,
+        fill=True,
+        tooltip=f'Sali su "{linea}"'
+    ).add_to(mappa.mappa)
+
+    folium.CircleMarker(
+        end,
+        radius=5,
+        weight=2,
+        fill=True,
+        tooltip=f'Scendi da "{linea}"'
+    ).add_to(mappa.mappa)
+
+    # helper per label sempre visibili
+    def _div_label(text, dx_px=10, dy_px=-10, w=320, h=28):
+        return folium.DivIcon(
+            html=f"""
+            <div style="
+                transform: translate({dx_px}px, {dy_px}px);
+                display: inline-block;
+                font-size: 12px;
+                font-weight: bold;
+                color: black;
+                background-color: white;
+                padding: 2px 6px;
+                border-radius: 6px;
+                border: 1px solid black;
+                white-space: nowrap;
+                pointer-events: none;
+            ">{text}</div>
+            """,
+            icon_size=(w, h),
+            icon_anchor=(0, 0)
+        )
+    
+    folium.Marker(
+        location=start,
+        icon=_div_label(f'⬆️ Sali su "{linea}"', dx_px=10, dy_px=-10)
+    ).add_to(mappa.mappa)
+
+    folium.Marker(
+        location=end,
+        icon=_div_label(f'⬇️ Scendi da "{linea}"', dx_px=10, dy_px=-10)
+    ).add_to(mappa.mappa)
+
+    mappa.salvaMappa("mappa.html")
     return
 
 def caricaElementiDaJSON(directory_risultati, bbox, utente):
@@ -594,7 +704,7 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
     try:
         import time 
         import random
-        time.sleep(random.uniform(0, 1)) #(TODO rimuovi?) aggiungo un piccolo delay per evitare di fare troppe chiamate in poco tempo (e rischiare di essere bloccati)
+        #time.sleep(random.uniform(0, 1)) #(TODO rimuovi?) aggiungo un piccolo delay per evitare di fare troppe chiamate in poco tempo (e rischiare di essere bloccati)
 
         call = requests.post('https://api.openrouteservice.org/v2/directions/foot-walking/json', json=body, headers=headers)
         call.raise_for_status()
@@ -612,12 +722,15 @@ def chiamataAPIdiORS(inizio, fine, elementi_da_evitare=None, waypoints=None, pre
         elif call.status_code == 403:
             print("Accesso negato")
         elif call.status_code == 413:
-            print("Richiesta troppo grande!") #TODO non deve fare exit, forse basta cosi?
+            print("Richiesta troppo grande!") #TODO ho messo return al posto di exit. DA TESTARE
             return None
+        elif call.status_code == 400:
+            print("Richiesta malformata, controlla i parametri inviati")
         exit(-1)
     except Exception as e:
-        print(f"Errore nel calcolo del percorso: {e}")
+        print(f"Altro errore nel calcolo del percorso: {e}")
         exit(-1)
+
 
 
 def main():

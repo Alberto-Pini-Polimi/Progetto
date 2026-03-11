@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_9d4da6f5d0603fc6efd71d12edc329b7 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_9d4da6f5d0603fc6efd71d12edc329b7" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_9d4da6f5d0603fc6efd71d12edc329b7 = L.map(
+                "map_9d4da6f5d0603fc6efd71d12edc329b7",
+                {
+                    center: [45.4642, 9.19],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 12,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_445239d937ff0abc2c4121fa4e86d132 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_445239d937ff0abc2c4121fa4e86d132.addTo(map_9d4da6f5d0603fc6efd71d12edc329b7);
+        
+    
+            var poly_line_7441321a71e8435f8da6d355b2736b27 = L.polyline(
+                [[45.4688412, 9.1848332], [45.4835308, 9.2078829]],
+                {"bubblingMouseEvents": true, "color": "#27AE60", "dashArray": "2,6", "dashOffset": null, "fill": false, "fillColor": "#27AE60", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.9, "smoothFactor": 1.0, "stroke": true, "weight": 5}
+            ).addTo(map_9d4da6f5d0603fc6efd71d12edc329b7);
+        
+    
+            poly_line_7441321a71e8435f8da6d355b2736b27.bindTooltip(
+                `<div>
+                     tram - 1 greco - roserio
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_468e6c43d9afe57a825f3f3a766b3dcf = L.circleMarker(
+                [45.4688412, 9.1848332],
+                {"bubblingMouseEvents": true, "color": "#3388ff", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#3388ff", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 5, "stroke": true, "weight": 2}
+            ).addTo(map_9d4da6f5d0603fc6efd71d12edc329b7);
+        
+    
+            circle_marker_468e6c43d9afe57a825f3f3a766b3dcf.bindTooltip(
+                `<div>
+                     Sali su "1 greco - roserio"
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_bdedc785a6880632a2551c09c7924813 = L.circleMarker(
+                [45.4835308, 9.2078829],
+                {"bubblingMouseEvents": true, "color": "#3388ff", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#3388ff", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 5, "stroke": true, "weight": 2}
+            ).addTo(map_9d4da6f5d0603fc6efd71d12edc329b7);
+        
+    
+            circle_marker_bdedc785a6880632a2551c09c7924813.bindTooltip(
+                `<div>
+                     Scendi da "1 greco - roserio"
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_05a9a7e01c5f9b8ba1d2a0012d81834c = L.marker(
+                [45.4688412, 9.1848332],
+                {
+}
+            ).addTo(map_9d4da6f5d0603fc6efd71d12edc329b7);
+        
+    
+            var div_icon_c1df03527930a957c951e3c0357a0cb8 = L.divIcon({
+  "html": "\n            \u003cdiv style=\"\n                transform: translate(10px, -10px);\n                display: inline-block;\n                font-size: 12px;\n                font-weight: bold;\n                color: black;\n                background-color: white;\n                padding: 2px 6px;\n                border-radius: 6px;\n                border: 1px solid black;\n                white-space: nowrap;\n                pointer-events: none;\n            \"\u003e\u2b06\ufe0f Sali su \"1 greco - roserio\"\u003c/div\u003e\n            ",
+  "iconSize": [320, 28],
+  "iconAnchor": [0, 0],
+  "className": "empty",
+});
+        
+    
+                marker_05a9a7e01c5f9b8ba1d2a0012d81834c.setIcon(div_icon_c1df03527930a957c951e3c0357a0cb8);
+            
+    
+            var marker_e3cb35d31bf0c4a9bf749524610260bc = L.marker(
+                [45.4835308, 9.2078829],
+                {
+}
+            ).addTo(map_9d4da6f5d0603fc6efd71d12edc329b7);
+        
+    
+            var div_icon_d69f7f953eb5aac23c340557a6d8a4a2 = L.divIcon({
+  "html": "\n            \u003cdiv style=\"\n                transform: translate(10px, -10px);\n                display: inline-block;\n                font-size: 12px;\n                font-weight: bold;\n                color: black;\n                background-color: white;\n                padding: 2px 6px;\n                border-radius: 6px;\n                border: 1px solid black;\n                white-space: nowrap;\n                pointer-events: none;\n            \"\u003e\u2b07\ufe0f Scendi da \"1 greco - roserio\"\u003c/div\u003e\n            ",
+  "iconSize": [320, 28],
+  "iconAnchor": [0, 0],
+  "className": "empty",
+});
+        
+    
+                marker_e3cb35d31bf0c4a9bf749524610260bc.setIcon(div_icon_d69f7f953eb5aac23c340557a6d8a4a2);
+            
+</script>
+</html>
