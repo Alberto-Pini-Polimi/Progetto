@@ -1,0 +1,30 @@
+services:
+  otp:
+    image: opentripplanner/opentripplanner:latest
+    container_name: otp-server
+    volumes:
+      - ./data/OTP_data:/var/opentripplanner
+    command: --load
+    ports:
+      - "8080:8080"
+    environment:
+      - JAVA_OPTIONS=-Xmx6g
+
+  python-app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: python-client
+    depends_on:
+      - otp
+    # Montiamo le cartelle locali dentro il container in /usr/src/project
+    volumes:
+      - ./app:/usr/src/project/app
+      - ./data:/usr/src/project/data
+      - ./MapOutputFolder:/usr/src/project/MapOutputFolder
+      - ./data/ORS_data:/usr/src/project/data/ORS_data
+    environment:
+      - ORS_API_KEY=${ORS_API_KEY}
+      - OTP_URL=http://otp:8080/otp/transmodel/v3
+    env_file:
+      - .env
