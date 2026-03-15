@@ -14,6 +14,9 @@ GTFS_FILE_PATH = OTP_DATA_FOLDER / "Milano-gtfs.zip"
 
 # File di appoggio per passare lo stato al terzo script
 BASELINE_FILE = OTP_DATA_FOLDER / "daily_accessibility_baseline.json"
+# file di aggiornamento orario con i nuovi updates sull'accessibilità rispetto
+# al momento in cui il GTFS viene aggiornato
+HOURLY_DATA_UPDATE_FILE = OTP_DATA_FOLDER / "inaccessible_stations_till_last_GTFSzip_file_update.txt"
 
 def unzip_gtfs(zip_path, extract_to):
     """Estrae il contenuto del file ZIP in una cartella specifica."""
@@ -123,6 +126,9 @@ def onceEach24H():
     with open(BASELINE_FILE, 'w') as f:
         json.dump(daily_status, f)
     print("💾 Stato giornaliero salvato per il monitoraggio orario.")
+
+    # ora cancello i dati del monitoraggio orario delle 24h ormai passate (una sorta di reset)
+    open(HOURLY_DATA_UPDATE_FILE, "w").close()
 
     extraction_folder = OTP_DATA_FOLDER / "tmp_gtfs_unzip"
 

@@ -46,6 +46,27 @@ def main():
     # aspettiamo che OTP sia pronto
     attendi_otp(otp_url)
 
+
+    # IDEALMENTE:
+
+    # faccio partire l'interfaccia web con cui l'utente può fare le sue richieste
+    # questo diventerebbe un semplice server flask
+
+    # all'arrivo di ogni richiesta si esegue OTP_routing (e quindi anche OSM_routing)
+    # e si risponde con la mappa.html
+
+    # questo script fa partire un azione periodica che esegue "dailyGTFSzipUpdater.py"
+    # dopodiché blocco il container python e il server andrà in down
+    # trovo un modo di lanciare il comando per ribuildare tutto col nuovo file Milano-gtfs.zip (updatato con la nuova accessibilità)
+    
+    # in tutto ciò c'è anche un'altra azione che esegue ogni ora per confrontare la
+    # baseline che è stata scritta al tempo dell'update del GTFS con i nuovi dati sull'accessibilità
+    # creando quindi un nuovo file "inaccessible_stations_till_last_GTFSzip_file_update.txt"
+    # contenente i nomi delle stazioni che sono diventate inaccessibili
+
+
+
+
     # eseguo finalmente il programma
     try:
         import OTP_routing
