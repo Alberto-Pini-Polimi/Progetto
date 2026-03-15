@@ -4,7 +4,8 @@ services:
     container_name: otp-server
     volumes:
       - ./data/OTP_data:/var/opentripplanner
-    command: --load
+    #command: ["--build", "--save"] # Per buildare
+    command: ["--load"] # Per caricare
     ports:
       - "8080:8080"
     environment:
@@ -23,6 +24,7 @@ services:
       - ./data:/usr/src/project/data
       - ./MapOutputFolder:/usr/src/project/MapOutputFolder
       - ./data/ORS_data:/usr/src/project/data/ORS_data
+      - ./data/OTP_data:/usr/src/project/data/OTP_data
     environment:
       - ORS_API_KEY=${ORS_API_KEY}
       - OTP_URL=http://otp:8080/otp/transmodel/v3
