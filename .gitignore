@@ -1,2 +1,3 @@
 .env
 data/OTP_data/graph.obj
+app/DB/database.db
