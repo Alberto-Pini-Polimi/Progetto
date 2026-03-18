@@ -3,8 +3,6 @@ import requests
 import ORS_routing
 import json
 
-USERS_DB = "data/OTP_data/users.txt"
-
 URL = os.getenv("OTP_URL", "http://localhost:8080/otp/transmodel/v3")
 HEADERS = {"Content-Type": "application/json"}
 
@@ -174,40 +172,6 @@ def ORS_call_and_draw(patterns):
 
 #TODO crea una funzione che setta inizio e fine graficamente su mappa
 
-
-def load_users(db_path: str = USERS_DB) -> dict:
-    if not os.path.exists(db_path):
-        return {}
-    try:
-        with open(db_path, "r", encoding="utf-8") as f:
-            return json.load(f) or {}
-    except Exception:
-        # file corrotto o vuoto -> riparto pulito
-        return {}
-
-def save_users(users: dict, db_path: str = USERS_DB) -> None:
-    with open(db_path, "w", encoding="utf-8") as f:
-        json.dump(users, f, ensure_ascii=False, indent=2)
-
-def input_float(prompt: str) -> float:
-    '''Chiede all'utente di inserire un numero float,
-        con validazione e gestione degli errori.
-    '''
-    while True:
-        s = input(prompt).strip().replace(",", ".")
-        try:
-            return float(s)
-        except ValueError:
-            print("Valore non valido, riprova.")
-
-def input_coords(label: str) -> dict:
-    #TODO aggiungere validazione coordinate milano:
-        # 45.35-45.60     9.0-9.35
-    #TODO aggiungere la possibilità di inserire un indirizzo a parole e geocodificarlo (con Nominatim o simili)
-    lat = input_float(f"{label} latitude: ")
-    lon = input_float(f"{label} longitude: ")
-    return {"coordinates": {"latitude": lat, "longitude": lon}}
-
 def sign_up(users: dict) -> str | None:
     username = input("Scegli username: ").strip()
     if not username:
@@ -235,102 +199,8 @@ def set_favorite(users: dict, username: str, from_obj: dict, to_obj: dict) -> No
 
 
 
-def main():
-    #TODO dai la possibilità di inserire da terminale origine/destinazione/data/ora/arriveBy/wheelchair/searchWindow
-    
-    variables = { #variabili predefinite. Al momento si puo sovrascrivere solo from e to mediante input
-        "from": {"coordinates": {"latitude": 45.47437, "longitude": 9.183323}},
-        "to":   {"coordinates": {"latitude": 45.48535, "longitude": 9.20944}},
-        "dateTime": "2026-02-28T16:07:08.511Z",  # TODO: mettici now
-        "modes": {
-            "transportModes": [
-                {"transportMode": "bus"},
-                {"transportMode": "metro"},
-                {"transportMode": "tram"},
-                {"transportMode": "rail"},
-            ],
-            "accessMode": "foot",
-            "egressMode": "foot",
-            "directMode": "foot",
-        },
-        "wheelchair": WHEELCHAIR,
-        "arriveBy": False,
-        "searchWindow": 40,
-    }
+def main(variables=None):
 
-    users = load_users()
-    logged_user = None
-
-    print("Hello, please digit a number and press enter")
-    print("1: sign up")
-    print("2: sign in")
-    print("3: use debug default path")
-
-    # while True:
-    #     choice = input("> ").strip()
-
-    #     if choice == "1":
-    #         logged_user = sign_up(users)
-    #         if not logged_user:
-    #             print("Please reselect one of the options and retry.")
-    #             continue
-    #         save_users(users)
-    #         break
-
-    #     elif choice == "2":
-    #         logged_user = sign_in(users)
-    #         if not logged_user:
-    #             print("Please reselect one of the options and retry.")
-    #             continue
-    #         break
-
-    #     elif choice == "3":
-    #         logged_user = None  # debug mode: usa variables di default
-    #         break
-
-    #     else:
-    #         print("Scelta non valida.")
-    #         print("Please select one of the options")
-
-    # uso il default:
-    logged_user = None
-
-    # se sei loggato: mini-menu utente
-    if logged_user: #se non sei in debug
-        fav = users.get(logged_user, {}).get("favorite")
-
-        #TODO aggiungi logout 
-        print("\nCosa vuoi fare?")
-        print("1: calcola path preferito" + (" (disponibile)" if fav else " (non impostato)"))
-        print("2: inserisci partenza/arrivo")
-        action = input("> ").strip()
-
-        #TODO mettere un loop con whitelist. ORA VA SOLO TESTATO
-        while action not in ["1", "2"]:
-            print("Scelta non valida, riprova.")
-            action = input("> ").strip()
-
-        if action == "1":
-            if not fav:
-                print("Nessun path preferito salvato.")
-                return
-            variables["from"] = fav["from"]
-            variables["to"] = fav["to"]
-
-        elif action == "2":
-            from_obj = input_coords("FROM")
-            to_obj = input_coords("TO")
-            variables["from"] = from_obj
-            variables["to"] = to_obj
-
-            if input("Vuoi salvarlo come preferito? (y/N) ").strip().lower() == "y":
-                set_favorite(users, logged_user, from_obj, to_obj)
-                save_users(users)
-                print("Preferito salvato.")
-
-        else:
-            print("Scelta non valida.")
-            return
     
     #Chiamata HTTP a OTP (POST GraphQL)
     r = requests.post(URL, json={"query": QUERY, "variables": variables}, headers=HEADERS, timeout=60)
