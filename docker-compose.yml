@@ -25,6 +25,7 @@ services:
       - ./MapOutputFolder:/usr/src/project/MapOutputFolder
       - ./data/ORS_data:/usr/src/project/data/ORS_data
       - ./data/OTP_data:/usr/src/project/data/OTP_data
+      - ./app/DB:/usr/src/project/app/DB
     environment:
       - ORS_API_KEY=${ORS_API_KEY}
       - OTP_URL=http://otp:8080/otp/transmodel/v3

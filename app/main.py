@@ -6,7 +6,7 @@ import sys
 import bcrypt
 from datetime import datetime, timezone
 
-from app.DB.database import (
+from DB.database import (
     get_connection,
     create_user,
     get_user_by_username,
