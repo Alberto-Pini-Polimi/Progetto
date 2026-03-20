@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Risultato{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Percorso calcolato</h1>
+    <p class="muted">La richiesta è stata inviata al motore di routing.</p>
+
+    <div class="result-box">
+        <h2>Variabili inviate</h2>
+        <pre>{{ variables | tojson(indent=2) }}</pre>
+    </div>
+
+    {% if result %}
+    <div class="result-box">
+        <h2>Risposta</h2>
+        <pre>{{ result | tojson(indent=2) }}</pre>
+    </div>
+    {% endif %}
+
+    <a class="secondary-btn" href="{{ url_for('dashboard') }}">Nuova ricerca</a>
+</div>
+{% endblock %}

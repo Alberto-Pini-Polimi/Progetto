@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Calcolo percorso</h1>
+    <p class="muted">Inserisci origine, destinazione e parametri.</p>
+
+    <form method="POST" class="form">
+        <div class="grid-2">
+            <section class="panel">
+                <h2>Origine</h2>
+
+                <label>Metodo</label>
+                <select name="from_mode">
+                    <option value="manual">Manuale</option>
+                    <option value="favourite">Preferito</option>
+                </select>
+
+                <label>Preferito</label>
+                <select name="from_favourite">
+                    <option value="">-- seleziona --</option>
+                    {% for fav in favourites %}
+                        <option value="{{ fav.id }}">
+                            {{ fav.label }} ({{ fav.latitude }}, {{ fav.longitude }})
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Latitudine</label>
+                <input type="text" name="from_lat" placeholder="45.47437">
+
+                <label>Longitudine</label>
+                <input type="text" name="from_lon" placeholder="9.183323">
+
+                <label class="checkbox">
+                    <input type="checkbox" name="save_from">
+                    Salva nei preferiti
+                </label>
+
+                <label>Nome preferito</label>
+                <input type="text" name="from_label" placeholder="Casa">
+            </section>
+
+            <section class="panel">
+                <h2>Destinazione</h2>
+
+                <label>Metodo</label>
+                <select name="to_mode">
+                    <option value="manual">Manuale</option>
+                    <option value="favourite">Preferito</option>
+                </select>
+
+                <label>Preferito</label>
+                <select name="to_favourite">
+                    <option value="">-- seleziona --</option>
+                    {% for fav in favourites %}
+                        <option value="{{ fav.id }}">
+                            {{ fav.label }} ({{ fav.latitude }}, {{ fav.longitude }})
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Latitudine</label>
+                <input type="text" name="to_lat" placeholder="45.48535">
+
+                <label>Longitudine</label>
+                <input type="text" name="to_lon" placeholder="9.20944">
+
+                <label class="checkbox">
+                    <input type="checkbox" name="save_to">
+                    Salva nei preferiti
+                </label>
+
+                <label>Nome preferito</label>
+                <input type="text" name="to_label" placeholder="Università">
+            </section>
+        </div>
+
+        <div class="grid-2">
+            <section class="panel">
+                <h2>Parametri</h2>
+
+                <label>DateTime UTC ISO</label>
+                <input type="text" name="date_time" placeholder="2026-02-28T16:07:08.511Z">
+
+                <label>Search window</label>
+                <input type="number" name="search_window" value="40" min="1">
+
+                <label class="checkbox">
+                    <input type="checkbox" name="arrive_by">
+                    Arrive by
+                </label>
+
+                <label class="checkbox">
+                    <input type="checkbox" name="wheelchair">
+                    Wheelchair
+                </label>
+            </section>
+
+            <section class="panel">
+                <h2>Preferiti salvati</h2>
+                {% if favourites %}
+                    <ul class="fav-list">
+                        {% for fav in favourites %}
+                            <li>
+                                <strong>{{ fav.label }}</strong><br>
+                                <span>{{ fav.latitude }}, {{ fav.longitude }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="muted">Nessun preferito salvato.</p>
+                {% endif %}
+            </section>
+        </div>
+
+        <button type="submit">Calcola percorso</button>
+    </form>
+</div>
+{% endblock %}

@@ -4,7 +4,18 @@ import time
 import requests
 import sys
 import bcrypt
+import importlib
 from datetime import datetime, timezone
+
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    flash,
+)
 
 from DB.database import (
     get_connection,
@@ -14,6 +25,11 @@ from DB.database import (
     get_user_favourites,
     add_favourite,
 )
+
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-me") #TODO : usare una chiave segreta reale in produzione
+
+OTP_URL = os.getenv("OTP_URL", "http://localhost:8080/otp/transmodel/v3")
 
 # =========================
 # OTP helpers
@@ -80,133 +96,43 @@ def verify_password(password: str, stored_hash: str) -> bool:
 
 
 # =========================
-# Auth / User helpers
+# Utils
 # =========================
 
-def sign_up(conn: sqlite3.Connection):
-    print("\n=== SIGN UP ===")
-    username = input("Username: ").strip()
-    email = input("Email: ").strip().lower()
-    password = input("Password: ").strip()
-    mobility_problem = input("Mobility problem (opzionale): ").strip() or None
-
-    if not username or not email or not password:
-        print("Username, email e password sono obbligatori.")
+def get_logged_user():
+    user_id = session.get("user_id")
+    username = session.get("username")
+    if not user_id:
         return None
+    return {"id": user_id, "username": username}
 
-    # opzionale: controllo preventivo
-    if get_user_by_username(conn, username):
-        print("Username già esistente.")
-        return None
+def build_point_from_form(prefix: str):
+    lat = request.form.get(f"{prefix}_lat", "").strip().replace(",", ".")
+    lon = request.form.get(f"{prefix}_lon", "").strip().replace(",", ".")
 
-    if get_user_by_email(conn, email):
-        print("Email già esistente.")
-        return None
+    if not lat or not lon:
+        raise ValueError(f"Coordinate mancanti per {prefix}")
 
-    password_hash = hash_password(password)
+    return {
+        "coordinates": {
+            "latitude": float(lat),
+            "longitude": float(lon),
+        }
+    }
 
-    try:
-        user_id = create_user(
-            conn=conn,
-            username=username,
-            email=email,
-            password_hash=password_hash,
-            mobility_problem=mobility_problem,
-        )
-        user = get_user_by_username(conn, username)
-        print(f"✅ Utente creato con successo. ID: {user_id}")
-        return user
-    except sqlite3.IntegrityError as e:
-        print(f"Errore di integrità nel database: {e}")
-        return None
+def point_from_favourite(fav):
+    return {
+        "coordinates": {
+            "latitude": fav["latitude"],
+            "longitude": fav["longitude"],
+        }
+    }
 
-def sign_in(conn: sqlite3.Connection):
-    print("\n=== SIGN IN ===")
-    username = input("Username: ").strip()
-    password = input("Password: ").strip()
-
-    user = get_user_by_username(conn, username)
-    if not user:
-        print("Utente non trovato.")
-        return None
-
-    if not verify_password(password, user["password_hash"]):
-        print("Password errata.")
-        return None
-
-    print(f"✅ Bentornato, {user['username']}!")
-    return user
-
-
-# =========================
-# Favourites helpers
-# =========================
-
-def choose_favourite(conn: sqlite3.Connection, user_id: int):
-    favourites = get_user_favourites(conn, user_id)
-
-    if not favourites:
-        print("Nessun preferito salvato.")
-        return None
-
-    print("\nPreferiti disponibili:")
-    for i, fav in enumerate(favourites, start=1):
-        print(f"{i}: {fav['label']} ({fav['latitude']}, {fav['longitude']})")
-
-    while True:
-        scelta = input("Seleziona un preferito: ").strip()
-        if scelta.isdigit():
-            idx = int(scelta)
-            if 1 <= idx <= len(favourites):
-                return favourites[idx - 1]
-        print("Scelta non valida, riprova.")
-
-def maybe_save_favourite(conn: sqlite3.Connection, user_id: int, point: dict):
-    """
-    Salva un singolo punto nei preferiti.
-    """
-    save = input("Vuoi salvare questo punto tra i preferiti? (y/N) ").strip().lower()
-    if save != "y":
-        return
-
-    label = input("Inserisci un nome per questo preferito: ").strip()
-    if not label:
-        print("Label non valida.")
-        return
-
-    lat = point["coordinates"]["latitude"]
-    lon = point["coordinates"]["longitude"]
-
-    try:
-        add_favourite(conn, user_id, label, lat, lon)
-        print("✅ Preferito salvato.")
-    except sqlite3.IntegrityError:
-        print("Esiste già un preferito con questa label.")
-
-
-# =========================
-# Main
-# =========================
-def main():
-    print("\n======================================")
-    print("||  Avvio del Container di Python   ||")
-    print("======================================\n")
-
-    # Recupera l'URL di OTP dalle variabili d'ambiente (settato in docker-compose.yml)
-    # Se non lo trova, usa localhost come fallback di sicurezza
-    otp_url = os.getenv("OTP_URL", "http://localhost:8080/otp/transmodel/v3")
-    
-    # aspettiamo che OTP sia pronto
-    attendi_otp(otp_url)
-
-    conn = get_connection()
-
-    WHEELCHAIR = True
-    #TODO dai la possibilità di inserire da terminale origine/destinazione/data/ora/arriveBy/wheelchair/searchWindow
-    variables = { #variabili default debug
+def get_default_variables(wheelchair=False):
+    return {
         "from": {"coordinates": {"latitude": 45.47437, "longitude": 9.183323}},
-        "to":   {"coordinates": {"latitude": 45.48535, "longitude": 9.20944}},
-        "dateTime": "2026-02-28T16:07:08.511Z",  # TODO: mettici now
+        "to": {"coordinates": {"latitude": 45.48535, "longitude": 9.20944}},
+        "dateTime": now_utc_iso(),
         "modes": {
             "transportModes": [
                 {"transportMode": "bus"},
@@ -218,128 +144,225 @@ def main():
             "egressMode": "foot",
             "directMode": "foot",
         },
-        "wheelchair": WHEELCHAIR,
+        "wheelchair": wheelchair,
         "arriveBy": False,
         "searchWindow": 40,
     }
 
-    # IDEALMENTE:
 
-    # faccio partire l'interfaccia web con cui l'utente può fare le sue richieste
-    # questo diventerebbe un semplice server flask
+# =========================
+# Routes
+# =========================
 
-    # all'arrivo di ogni richiesta si esegue OTP_routing (e quindi anche OSM_routing)
-    # e si risponde con la mappa.html
-
-    # questo script fa partire un azione periodica che esegue "dailyGTFSzipUpdater.py"
-    # dopodiché blocco il container python e il server andrà in down
-    # trovo un modo di lanciare il comando per ribuildare tutto col nuovo file Milano-gtfs.zip (updatato con la nuova accessibilità)
-    
-    # in tutto ciò c'è anche un'altra azione che esegue ogni ora per confrontare la
-    # baseline che è stata scritta al tempo dell'update del GTFS con i nuovi dati sull'accessibilità
-    # creando quindi un nuovo file "inaccessible_stations_till_last_GTFSzip_file_update.txt"
-    # contenente i nomi delle stazioni che sono diventate inaccessibili
+@app.route("/")
+def home():
+    if session.get("user_id"):
+        return redirect(url_for("dashboard"))
+    return redirect(url_for("login"))
 
 
-    print("Hello, please digit a number and press enter")
-    print("1: sign up")
-    print("2: sign in")
-    print("3: use debug default path")
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        conn = get_connection()
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
 
-    logged_user = None
+        user = get_user_by_username(conn, username)
+        conn.close()
 
-    while True:
-        choice = input("> ").strip()
+        if not user:
+            flash("Utente non trovato.", "error")
+            return render_template("login.html")
 
-        if choice == "1":
-            logged_user = sign_up(conn)
-            if not logged_user:
-                print("Please reselect one of the options and retry.")
-                continue
-            break
+        if not verify_password(password, user["password_hash"]):
+            flash("Password errata.", "error")
+            return render_template("login.html")
 
-        elif choice == "2":
-            logged_user = sign_in(conn)
-            if not logged_user:
-                print("Please reselect one of the options and retry.")
-                continue
-            break
+        session["user_id"] = user["id"]
+        session["username"] = user["username"]
 
-        elif choice == "3":
-            logged_user = None
-            break
+        flash(f"Benvenuto, {user['username']}.", "success")
+        return redirect(url_for("dashboard"))
 
-        else:
-            print("Scelta non valida.")
-            print("Please select one of the options")
+    return render_template("login.html")
 
-    if logged_user is not None:
-        user_id = logged_user["id"]
 
-        def choose_point(conn, user_id: int, point_name: str) -> dict | None:
-            """
-            Chiede all'utente come impostare un punto (FROM o TO):
-            1) da preferiti
-            2) manualmente
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        conn = get_connection()
 
-            Ritorna un dict nel formato:
-            {"coordinates": {"latitude": ..., "longitude": ...}}
-            """
-            print(f"\n{point_name}: come vuoi inserirlo?")
-            print("1: usa un preferito salvato")
-            print("2: inserisci manualmente")
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "").strip()
+        mobility_problem = request.form.get("mobility_problem", "").strip() or None
 
-            choice = input("> ").strip()
-            while choice not in ["1", "2"]:
-                print("Scelta non valida, riprova.")
-                choice = input("> ").strip()
-
-            if choice == "1":
-                fav = choose_favourite(conn, user_id)
-                if not fav:
-                    return None
-
-                return {
-                    "coordinates": {
-                        "latitude": fav["latitude"],
-                        "longitude": fav["longitude"],
-                    }
-                }
-
-            # choice == "2"
-            point = input_coords(point_name)
-
-            save = input(f"Vuoi salvare {point_name} tra i preferiti? (y/N) ").strip().lower()
-            if save == "y":
-                maybe_save_favourite(conn, user_id, point)
-
-            return point
-
-        print("\nImpostazione percorso")
-
-        from_obj = choose_point(conn, user_id, "FROM")
-        if not from_obj:
+        if not username or not email or not password:
+            flash("Username, email e password sono obbligatori.", "error")
             conn.close()
-            return
+            return render_template("signup.html")
 
-        to_obj = choose_point(conn, user_id, "TO")
-        if not to_obj:
+        if get_user_by_username(conn, username):
+            flash("Username già esistente.", "error")
             conn.close()
-            return
+            return render_template("signup.html")
 
-        variables["from"] = from_obj
-        variables["to"] = to_obj
+        if get_user_by_email(conn, email):
+            flash("Email già esistente.", "error")
+            conn.close()
+            return render_template("signup.html")
 
-    # eseguo finalmente il programma
+        password_hash = hash_password(password)
+
+        try:
+            create_user(
+                conn=conn,
+                username=username,
+                email=email,
+                password_hash=password_hash,
+                mobility_problem=mobility_problem,
+            )
+            conn.close()
+            flash("Utente creato con successo. Ora puoi fare login.", "success")
+            return redirect(url_for("login"))
+
+        except sqlite3.IntegrityError as e:
+            conn.close()
+            flash(f"Errore database: {e}", "error")
+            return render_template("signup.html")
+
+    return render_template("signup.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("Logout effettuato.", "success")
+    return redirect(url_for("login"))
+
+
+@app.route("/dashboard", methods=["GET", "POST"])
+def dashboard():
+    user = get_logged_user()
+    if not user:
+        return redirect(url_for("login"))
+
+    conn = get_connection()
+    favourites = get_user_favourites(conn, user["id"])
+
+    if request.method == "POST":
+        try:
+            variables = get_default_variables(wheelchair=True)
+
+            from_mode = request.form.get("from_mode", "manual")
+            if from_mode == "favourite":
+                from_fav_id = request.form.get("from_favourite")
+                selected = next((f for f in favourites if str(f["id"]) == str(from_fav_id)), None)
+                if not selected:
+                    raise ValueError("Preferito FROM non valido.")
+                from_obj = point_from_favourite(selected)
+            else:
+                from_obj = build_point_from_form("from")
+
+                save_from = request.form.get("save_from")
+                from_label = request.form.get("from_label", "").strip()
+                if save_from and from_label:
+                    try:
+                        add_favourite(
+                            conn,
+                            user["id"],
+                            from_label,
+                            from_obj["coordinates"]["latitude"],
+                            from_obj["coordinates"]["longitude"],
+                        )
+                    except sqlite3.IntegrityError:
+                        flash("Label FROM già esistente tra i preferiti.", "error")
+
+            to_mode = request.form.get("to_mode", "manual")
+            if to_mode == "favourite":
+                to_fav_id = request.form.get("to_favourite")
+                selected = next((f for f in favourites if str(f["id"]) == str(to_fav_id)), None)
+                if not selected:
+                    raise ValueError("Preferito TO non valido.")
+                to_obj = point_from_favourite(selected)
+            else:
+                to_obj = build_point_from_form("to")
+
+                save_to = request.form.get("save_to")
+                to_label = request.form.get("to_label", "").strip()
+                if save_to and to_label:
+                    try:
+                        add_favourite(
+                            conn,
+                            user["id"],
+                            to_label,
+                            to_obj["coordinates"]["latitude"],
+                            to_obj["coordinates"]["longitude"],
+                        )
+                    except sqlite3.IntegrityError:
+                        flash("Label TO già esistente tra i preferiti.", "error")
+
+            variables["from"] = from_obj
+            variables["to"] = to_obj
+            variables["dateTime"] = request.form.get("date_time") or now_utc_iso()
+            variables["arriveBy"] = request.form.get("arrive_by") == "on"
+            variables["wheelchair"] = request.form.get("wheelchair") == "on"
+
+            search_window = request.form.get("search_window", "40").strip()
+            variables["searchWindow"] = int(search_window) if search_window.isdigit() else 40
+
+            otp_ready = attendi_otp(OTP_URL, timeout_minuti=3)
+            if not otp_ready:
+                conn.close()
+                flash("OTP non è raggiungibile al momento.", "error")
+                return render_template("dashboard.html", user=user, favourites=favourites)
+
+            try:
+                OTP_routing = importlib.import_module("OTP_routing")
+                result = OTP_routing.main(variables=variables)
+            except ImportError as e:
+                conn.close()
+                flash(f"Non trovo OTP_routing.py: {e}", "error")
+                return render_template("dashboard.html", user=user, favourites=favourites)
+            except Exception as e:
+                conn.close()
+                flash(f"Errore durante il routing: {e}", "error")
+                return render_template("dashboard.html", user=user, favourites=favourites)
+
+            conn.close()
+            return render_template("result.html", variables=variables, result=result)
+
+        except ValueError as e:
+            conn.close()
+            flash(str(e), "error")
+            return render_template("dashboard.html", user=user, favourites=favourites)
+
+        except Exception as e:
+            conn.close()
+            flash(f"Errore imprevisto: {e}", "error")
+            return render_template("dashboard.html", user=user, favourites=favourites)
+
+    conn.close()
+    return render_template("dashboard.html", user=user, favourites=favourites)
+
+'''
+@app.route("/debug-route")
+def debug_route():
+    variables = get_default_variables(wheelchair=True)
+
+    otp_ready = attendi_otp(OTP_URL, timeout_minuti=3)
+    if not otp_ready:
+        flash("OTP non è raggiungibile al momento.", "error")
+        return redirect(url_for("login"))
+
     try:
-        import OTP_routing
-        
-        print("pronti, partenza, viaa 🚀 ...")
-        OTP_routing.main(variables=variables)
-        
-    except ImportError as e:
-        print(f"\n❌ Errore: Non trovo lo script OTP_routing.py. Errore: {e}")
-    
+        OTP_routing = importlib.import_module("OTP_routing")
+        result = OTP_routing.main(variables=variables)
+        return render_template("result.html", variables=variables, result=result)
+    except Exception as e:
+        flash(f"Errore durante il routing di debug: {e}", "error")
+        return redirect(url_for("login"))'''
 
 if __name__ == "__main__":
-    main()
+    app.run(host="0.0.0.0", port=5000, debug=True)
