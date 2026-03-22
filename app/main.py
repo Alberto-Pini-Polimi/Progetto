@@ -49,7 +49,7 @@ def attendi_otp(url_otp, timeout_minuti=10):
             response = requests.get("http://otp:8080/otp/", timeout=5)
             if response.status_code < 500:
                 print("✅ OTP pronto.")
-                break
+                return True
         except requests.RequestException:
             pass
 
@@ -346,7 +346,7 @@ def dashboard():
     conn.close()
     return render_template("dashboard.html", user=user, favourites=favourites)
 
-'''
+
 @app.route("/debug-route")
 def debug_route():
     variables = get_default_variables(wheelchair=True)
@@ -362,7 +362,7 @@ def debug_route():
         return render_template("result.html", variables=variables, result=result)
     except Exception as e:
         flash(f"Errore durante il routing di debug: {e}", "error")
-        return redirect(url_for("login"))'''
+        return redirect(url_for("login"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

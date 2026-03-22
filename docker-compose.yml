@@ -28,5 +28,8 @@ services:
     environment:
       - ORS_API_KEY=${ORS_API_KEY}
       - OTP_URL=http://otp:8080/otp/transmodel/v3
+      - PYTHONUNBUFFERED=1
     env_file:
       - .env
+    ports:
+      - "5000:5000"
