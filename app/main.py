@@ -128,11 +128,12 @@ def point_from_favourite(fav):
         }
     }
 
-def get_default_variables(wheelchair=False):
+def get_default_variables(wheelchair=True):
     return {
         "from": {"coordinates": {"latitude": 45.47437, "longitude": 9.183323}},
         "to": {"coordinates": {"latitude": 45.48535, "longitude": 9.20944}},
-        "dateTime": now_utc_iso(),
+        #"dateTime": now_utc_iso(), #TODO usalo in produzione
+        "dateTime": "2026-02-28T16:07:08.511Z",
         "modes": {
             "transportModes": [
                 {"transportMode": "bus"},
