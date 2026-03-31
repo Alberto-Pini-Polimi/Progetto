@@ -43,12 +43,10 @@ def check_new_breakdowns():
                 broken_stations.append(name) # aggiungo il nome della stazione al file
 
     # 5. Scriviamo/Aggiorniamo il file di output
-    # Sovrascriviamo il file ('w') ad ogni esecuzione. 
-    # Questo gestisce automaticamente sia le nuove aggiunte che le rimozioni (riparazioni).
+    # Sovrascriviamo il file ('w') ad ogni esecuzione. (per garantire che le riparazioni di stazioni siano considerati di nuovo come funzionanti)
     try:
         with open(OUTPUT_FILE, 'w', encoding='utf-8') as out_f:
-            # Ordiniamo alfabeticamente per avere un file più leggibile
-            for station in sorted(broken_stations):
+            for station in broken_stations:
                 out_f.write(f"{station}\n")
         print(f"📝 File '{OUTPUT_FILE.name}' aggiornato con successo.")
     except Exception as e:

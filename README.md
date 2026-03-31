@@ -81,4 +81,4 @@ $ docker compose up
 | Stop and Remove Containers | `docker compose down` |
 | View Real-time Logs | `docker compose logs -f` |
 | Force Rebuild of Routing Graph | `rm data/OTP_data/graph.obj && docker compose up` |
-| Rebuild Python Client | `docker compose build python-client` |
+| Rebuild Python Client | `docker compose build python-app` |

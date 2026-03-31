@@ -102,6 +102,8 @@ def extract_walk_legs_and_print_public_transports(patterns):
 
         a = get_place_coord(fp)
         b = get_place_coord(tp)
+        nome_a = fp.get("name")
+        nome_b = tp.get("name")
         if not a or not b:
             print(f"Leg {leg_idx} manca di coordinate valide")
             exit(-1)
@@ -124,6 +126,8 @@ def extract_walk_legs_and_print_public_transports(patterns):
                 ORS_routing.aggiungiMezzoPubblico(
                     inizio=a,
                     fine=b,
+                    nome_inizio = nome_a, # aggiungo anche i nomi delle fermate che mi servono dopo
+                    nome_fine = nome_b,
                     tipologia_mezzo=tipologia_mezzo,
                     nome_linea=nome_linea
                 )

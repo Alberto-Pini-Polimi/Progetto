@@ -315,7 +315,11 @@ class MappaFolium:
         if centro:
             self.mappa = folium.Map(location=centro, zoom_start=zoom_start)
         else:
-            self.mappa = folium.Map(location=[45.4642, 9.1900], zoom_start=12)  # Default: Milano
+            self.mappa = folium.Map(
+                location=[45.4642, 9.1900], # su milano
+                tiles='CartoDB positron',   # usando questa cartina
+                zoom_start=12
+            ) 
     
     def aggiungiPolyline(self, coordinate, colore="blue", peso=5, opacità=0.7, tooltip="Percorso"):
         """Aggiunge una polyline alla mappa"""
@@ -438,18 +442,18 @@ def aggiornaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_file):
     #     colore='orange'
     # )
 
-    # Aggiungi il buffer facilitatori
-    mappa.aggiungiPoligono(
-        [(y, x) for x, y in percorso.bufferFacilitatori_geo.exterior.coords],
-        tooltip='Area di ricerca facilitatori',
-        colore='lightgreen'
-    )
-    # Aggiungi il buffer infrastrutture
-    mappa.aggiungiPoligono(
-        [(y, x) for x, y in percorso.bufferInfrastrutture_geo.exterior.coords],
-        tooltip='Area di ricerca infrastrutture',
-        colore='lightblue'
-    )
+    # # Aggiungi il buffer facilitatori
+    # mappa.aggiungiPoligono(
+    #     [(y, x) for x, y in percorso.bufferFacilitatori_geo.exterior.coords],
+    #     tooltip='Area di ricerca facilitatori',
+    #     colore='lightgreen'
+    # )
+    # # Aggiungi il buffer infrastrutture
+    # mappa.aggiungiPoligono(
+    #     [(y, x) for x, y in percorso.bufferInfrastrutture_geo.exterior.coords],
+    #     tooltip='Area di ricerca infrastrutture',
+    #     colore='lightblue'
+    # )
 
     # Aggiungi i infrastrutture
     for infrastruttura in infrastrutture:
@@ -471,7 +475,7 @@ def aggiornaMappa(percorso, barriere, facilitatori, infrastrutture, mappa_file):
 
     return
 
-def aggiungiMezzoPubblico(inizio, fine, tipologia_mezzo, nome_linea, mappa=None):
+def aggiungiMezzoPubblico(inizio, fine, nome_inizio, nome_fine, tipologia_mezzo, nome_linea, mappa=None):
     """
     disegna la tratta dei mezzi pubblici tra inizio e fine,
     se in futuro si useranno piu mappe si potra passare quella desiderata
@@ -570,14 +574,41 @@ def aggiungiMezzoPubblico(inizio, fine, tipologia_mezzo, nome_linea, mappa=None)
             icon_anchor=(0, 0)
         )
     
+    # prendo la lista di tutte le stazioni che sono diventate inaccessibili dall'ultima 
+    # build del graph.obj questa lista deve essere aggiornata periodicamente
+    if tipologia_mezzo == "metro":
+        stationsBecomeUnaccessible = []
+        try:
+            with open(base_directory / "data" / "OTP_data" / "inaccessible_stations_till_last_GTFSzip_file_update.txt", "r", encoding='utf-8') as recentlyInaccessibleStationsFile:
+                for stazione in recentlyInaccessibleStationsFile:
+                    stationsBecomeUnaccessible.append(stazione.strip())
+        except FileNotFoundError:
+            print("manca il file delle stazioni diventate inaccessibili dall'ultima build!")
+
+    print(f"\n\n\n\n\nStazioni {stationsBecomeUnaccessible}\n\n\n\n\n")
+
+
+    # e ora devo capire se le stazioni che sto considerando sono incluse tra quelle diventate inaccessibili
+    # per farlo mi serve sapere il nome della stazione!
+    if str(nome_inizio) in stationsBecomeUnaccessible:
+        messaggioSalita = f'⬆️ Sali su "{linea} a {nome_inizio}<br>ATTENZIONE! in questa stazione non si garantisce completa accessibilità"'
+    else:
+        messaggioSalita = f'⬆️ Sali su "{linea} a {nome_inizio}<br>In questo momento la stazione è completamente accessibile!"'
+
+    if str(nome_fine) in stationsBecomeUnaccessible:
+        messaggioDiscesa = f'⬇️ Scendi da "{linea} a {nome_fine}<br>ATTENZIONE! in questa stazione non si garantisce completa accessibilità"'
+    else:
+        messaggioDiscesa = f'⬇️ Scendi da "{linea} a {nome_fine}<br>In questo momento la stazione è completamente accessibile!"'
+
+
     folium.Marker(
         location=start,
-        icon=_div_label(f'⬆️ Sali su "{linea}"', dx_px=10, dy_px=-10)
+        icon=_div_label(messaggioSalita, dx_px=10, dy_px=-10)
     ).add_to(mappa.mappa)
 
     folium.Marker(
         location=end,
-        icon=_div_label(f'⬇️ Scendi da "{linea}"', dx_px=10, dy_px=-10)
+        icon=_div_label(messaggioDiscesa, dx_px=10, dy_px=-10)
     ).add_to(mappa.mappa)
 
     mappa.salvaMappa("mappa.html")
