@@ -585,9 +585,6 @@ def aggiungiMezzoPubblico(inizio, fine, nome_inizio, nome_fine, tipologia_mezzo,
         except FileNotFoundError:
             print("manca il file delle stazioni diventate inaccessibili dall'ultima build!")
 
-    print(f"\n\n\n\n\nStazioni {stationsBecomeUnaccessible}\n\n\n\n\n")
-
-
     # e ora devo capire se le stazioni che sto considerando sono incluse tra quelle diventate inaccessibili
     # per farlo mi serve sapere il nome della stazione!
     if str(nome_inizio) in stationsBecomeUnaccessible:
