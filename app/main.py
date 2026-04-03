@@ -31,7 +31,10 @@ from DB.database import (
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-me")
 
+# URL di OpenTripPlanner
 OTP_URL = os.getenv("OTP_URL", "http://localhost:8080/otp/transmodel/v3")
+
+# Cartella e nome file dove il tuo codice salva la mappa HTML finale
 OUTPUT_DIR = os.path.join(os.getcwd(), "MapOutputFolder")
 MAP_FILENAME = "mappa.html"
 
@@ -41,6 +44,10 @@ MAP_FILENAME = "mappa.html"
 # =========================
 
 def attendi_otp(url_otp, timeout_minuti=10):
+    """
+    Aspetta finché OTP non risponde.
+    Utile perché il routing non può partire se il servizio OTP non è ancora pronto.
+    """
     print(f"⏳ Attendo che OpenTripPlanner sia pronto all'indirizzo: {url_otp}")
 
     inizio = time.time()
@@ -48,6 +55,7 @@ def attendi_otp(url_otp, timeout_minuti=10):
 
     while True:
         try:
+            # Qui facciamo una richiesta semplice per verificare se OTP è vivo
             response = requests.get("http://otp:8080/otp/", timeout=5)
             if response.status_code < 500:
                 print("✅ OTP pronto.")
@@ -63,22 +71,11 @@ def attendi_otp(url_otp, timeout_minuti=10):
         time.sleep(10)
 
 
-def input_float(prompt: str) -> float:
-    while True:
-        s = input(prompt).strip().replace(",", ".")
-        try:
-            return float(s)
-        except ValueError:
-            print("Valore non valido, riprova.")
-
-
-def input_coords(label: str) -> dict:
-    lat = input_float(f"{label} latitude: ")
-    lon = input_float(f"{label} longitude: ")
-    return {"coordinates": {"latitude": lat, "longitude": lon}}
-
-
 def now_utc_iso() -> str:
+    """
+    Restituisce timestamp in formato ISO UTC compatibile con quello atteso da OTP.
+    Esempio: 2026-04-03T10:15:00.123Z
+    """
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
@@ -106,6 +103,10 @@ def verify_password(password: str, stored_hash: str) -> bool:
 # =========================
 
 def get_logged_user():
+    """
+    Recupera i dati minimi dell'utente loggato dalla sessione Flask.
+    Se non c'è user_id, l'utente non è autenticato.
+    """
     user_id = session.get("user_id")
     username = session.get("username")
     if not user_id:
@@ -114,6 +115,16 @@ def get_logged_user():
 
 
 def build_point_from_form(prefix: str):
+    """
+    Costruisce il punto 'from' o 'to' leggendo i campi hidden:
+    - from_lat / from_lon
+    - to_lat / to_lon
+
+    Questi campi vengono riempiti dal frontend quando l'utente seleziona
+    un indirizzo dalla lista dei risultati geocodificati.
+
+    prefix sarà quindi "from" oppure "to".
+    """
     lat = request.form.get(f"{prefix}_lat", "").strip().replace(",", ".")
     lon = request.form.get(f"{prefix}_lon", "").strip().replace(",", ".")
 
@@ -135,6 +146,9 @@ def build_point_from_form(prefix: str):
 
 
 def point_from_favourite(fav):
+    """
+    Converte un preferito salvato nel formato atteso dal payload OTP.
+    """
     return {
         "coordinates": {
             "latitude": fav["latitude"],
@@ -144,6 +158,9 @@ def point_from_favourite(fav):
 
 
 def get_default_variables(wheelchair=True):
+    """
+    Payload base per OTP da sovrascrivere.
+    """
     return {
         "from": {"coordinates": {"latitude": 45.47437, "longitude": 9.183323}},
         "to": {"coordinates": {"latitude": 45.48535, "longitude": 9.20944}},
@@ -166,6 +183,17 @@ def get_default_variables(wheelchair=True):
 
 
 def delete_old_map():
+    """
+    Rimuove la vecchia mappa prima di generarne una nuova.
+
+    - esiste sempre al massimo UNA mappa salvata
+    - prima di crearne una nuova, quella precedente viene cancellatata
+
+    Nota:
+    - questa soluzione va bene se non hai più utenti simultanei che generano
+      mappe diverse nello stesso momento.
+      #TODO testa e sistema con piu utenti contemporanei, se no dai nomi unici alle mappe per utente/sessione
+    """
     file_path = os.path.join(OUTPUT_DIR, MAP_FILENAME)
     if os.path.exists(file_path):
         try:
@@ -181,6 +209,20 @@ def delete_old_map():
 
 @app.route("/api/geocode")
 def api_geocode():
+    """
+    Endpoint chiamato dal frontend (dashboard.js inline nel template).
+
+    Flusso:
+    1. l'utente scrive un indirizzo
+    2. il frontend chiama /api/geocode?q=...
+    3. qui interroghiamo Nominatim
+    4. restituiamo JSON semplificato con label / lat / lon
+
+    Il frontend poi usa quei risultati per:
+    - mostrare la lista
+    - far scegliere un punto
+    - salvare nei campi hidden del form
+    """
     q = request.args.get("q", "").strip()
     if not q:
         return jsonify([])
@@ -196,6 +238,7 @@ def api_geocode():
                 "countrycodes": "it",
             },
             headers={
+                # Nominatim richiede uno User-Agent sensato
                 "User-Agent": "route-app/1.0"
             },
             timeout=10,
@@ -203,6 +246,7 @@ def api_geocode():
         response.raise_for_status()
         data = response.json()
 
+        # Normalizziamo il formato dei risultati per il frontend
         results = []
         for item in data:
             results.append({
@@ -223,6 +267,16 @@ def api_geocode():
 
 @app.route("/output-map")
 def serve_output_map():
+    """
+    Serve il file HTML della mappa finale generata da ORS/OTP.
+
+    In result.html la mappa non viene incorporata direttamente nel template:
+    viene caricata tramite iframe che punta a questa route.
+
+    Vantaggio:
+    - result.html può continuare a estendere base.html e mantenere navbar/stile
+    - la mappa HTML completa (con i suoi script e CSS) resta isolata
+    """
     file_path = os.path.join(OUTPUT_DIR, MAP_FILENAME)
 
     if not os.path.exists(file_path):
@@ -238,6 +292,11 @@ def serve_output_map():
 
 @app.route("/")
 def home():
+    """
+    Redirect iniziale:
+    - se l'utente è già loggato va in dashboard
+    - altrimenti va in login
+    """
     if session.get("user_id"):
         return redirect(url_for("dashboard"))
     return redirect(url_for("login"))
@@ -245,6 +304,9 @@ def home():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    """
+    Login classico con verifica password hashata.
+    """
     if request.method == "POST":
         conn = get_connection()
         username = request.form.get("username", "").strip()
@@ -272,6 +334,13 @@ def login():
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
+    """
+    Registrazione utente.
+    Fa i controlli minimi su:
+    - campi obbligatori
+    - unicità username
+    - unicità email
+    """
     if request.method == "POST":
         conn = get_connection()
 
@@ -319,6 +388,9 @@ def signup():
 
 @app.route("/logout")
 def logout():
+    """
+    Logout: svuota la sessione.
+    """
     session.clear()
     flash("Logout effettuato.", "success")
     return redirect(url_for("login"))
@@ -326,6 +398,21 @@ def logout():
 
 @app.route("/dashboard", methods=["GET", "POST"])
 def dashboard():
+    """
+    Route principale dell'app.
+
+    GET:
+    - mostra la dashboard con i preferiti
+
+    POST:
+    - legge input utente
+    - costruisce payload per OTP
+    - eventualmente salva nuovi preferiti
+    - aspetta che OTP sia pronto
+    - cancella la vecchia mappa
+    - chiama OTP_routing.main(...)
+    - mostra result.html con iframe verso la mappa
+    """
     user = get_logged_user()
     if not user:
         return redirect(url_for("login"))
@@ -337,6 +424,12 @@ def dashboard():
         try:
             variables = get_default_variables(wheelchair=True)
 
+            # =========================
+            # ORIGINE
+            # =========================
+            # Se l'utente ha scelto "preferito", prendiamo lat/lon dal DB.
+            # Altrimenti leggiamo from_lat/from_lon che arrivano dal frontend
+            # dopo la selezione di un indirizzo sulla mappa.
             from_mode = request.form.get("from_mode", "manual")
             if from_mode == "favourite":
                 from_fav_id = request.form.get("from_favourite")
@@ -347,6 +440,8 @@ def dashboard():
             else:
                 from_obj = build_point_from_form("from")
 
+                # Se l'utente ha spuntato "salva nei preferiti" salviamo
+                # il punto selezionato con la label indicata.
                 save_from = request.form.get("save_from")
                 from_label = request.form.get("from_label", "").strip()
                 if save_from and from_label:
@@ -361,6 +456,9 @@ def dashboard():
                     except sqlite3.IntegrityError:
                         flash("Label FROM già esistente tra i preferiti.", "error")
 
+            # =========================
+            # DESTINAZIONE
+            # =========================
             to_mode = request.form.get("to_mode", "manual")
             if to_mode == "favourite":
                 to_fav_id = request.form.get("to_favourite")
@@ -385,6 +483,9 @@ def dashboard():
                     except sqlite3.IntegrityError:
                         flash("Label TO già esistente tra i preferiti.", "error")
 
+            # =========================
+            # COMPLETAMENTO PAYLOAD OTP
+            # =========================
             variables["from"] = from_obj
             variables["to"] = to_obj
             variables["dateTime"] = request.form.get("date_time") or now_utc_iso()
@@ -394,18 +495,23 @@ def dashboard():
             search_window = request.form.get("search_window", "40").strip()
             variables["searchWindow"] = int(search_window) if search_window.isdigit() else 40
 
+            # Prima di fare il routing aspettiamo che OTP sia disponibile
             otp_ready = attendi_otp(OTP_URL, timeout_minuti=3)
             if not otp_ready:
                 conn.close()
                 flash("OTP non è raggiungibile al momento.", "error")
                 return render_template("dashboard.html", user=user, favourites=favourites)
 
-            #pulisco vecchia mappa
+            # Pulizia della vecchia mappa così la cartella output mantiene solo l'ultima mappa generata
             delete_old_map()
 
             try:
+                # Import dinamico del modulo di routing.
                 OTP_routing = importlib.import_module("OTP_routing")
+
+                # OTP_routing.main  genera la mappa HTML
                 result = OTP_routing.main(variables=variables)
+
             except ImportError as e:
                 conn.close()
                 flash(f"Non trovo OTP_routing.py: {e}", "error")
@@ -416,6 +522,8 @@ def dashboard():
                 return render_template("dashboard.html", user=user, favourites=favourites)
 
             conn.close()
+
+            # result.html incorpora la mappa vera tramite iframe verso /output-map
             return render_template(
                 "result.html",
                 variables=variables,
@@ -439,6 +547,10 @@ def dashboard():
 
 @app.route("/debug-route")
 def debug_route():
+    """
+    Route di debug per generare rapidamente un percorso senza passare dalla form.
+    Utile in sviluppo per testare OTP e la generazione della mappa.
+    """
     variables = get_default_variables(wheelchair=True)
     variables["dateTime"] = now_utc_iso()
 
@@ -447,7 +559,7 @@ def debug_route():
         flash("OTP non è raggiungibile al momento.", "error")
         return redirect(url_for("login"))
 
-    #pulisco vecchia mappa
+    # Anche qui puliamo la vecchia mappa prima di crearne una nuova
     delete_old_map()
 
     try:
@@ -465,5 +577,8 @@ def debug_route():
 
 
 if __name__ == "__main__":
+    # Crea la cartella output se non esiste
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    # debug=True, da togliere in produzione
     app.run(host="0.0.0.0", port=5000, debug=True)
