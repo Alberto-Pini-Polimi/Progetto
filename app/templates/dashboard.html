@@ -23,10 +23,14 @@
 
                 <div id="from_favourite_wrapper" style="display:none;">
                     <label>Preferito</label>
-                    <select name="from_favourite">
+                    <select name="from_favourite" id="from_favourite">
                         <option value="">-- seleziona --</option>
                         {% for fav in favourites %}
-                            <option value="{{ fav.id }}">
+                            <option
+                                value="{{ fav.id }}"
+                                data-lat="{{ fav.latitude }}"
+                                data-lon="{{ fav.longitude }}"
+                                data-label="{{ fav.label }}">
                                 {{ fav.label }} ({{ fav.latitude }}, {{ fav.longitude }})
                             </option>
                         {% endfor %}
@@ -74,10 +78,14 @@
 
                 <div id="to_favourite_wrapper" style="display:none;">
                     <label>Preferito</label>
-                    <select name="to_favourite">
+                    <select name="to_favourite" id="to_favourite">
                         <option value="">-- seleziona --</option>
                         {% for fav in favourites %}
-                            <option value="{{ fav.id }}">
+                            <option
+                                value="{{ fav.id }}"
+                                data-lat="{{ fav.latitude }}"
+                                data-lon="{{ fav.longitude }}"
+                                data-label="{{ fav.label }}">
                                 {{ fav.label }} ({{ fav.latitude }}, {{ fav.longitude }})
                             </option>
                         {% endfor %}
@@ -348,8 +356,8 @@ function updateMapBounds() {
 }
 
 function setSelectedAddress(type, item, selectedCard = null) {
-    const lat = item.lat;
-    const lon = item.lon;
+    const lat = Number(item.lat);
+    const lon = Number(item.lon);
     const label = item.label;
 
     if (type === "from") {
@@ -439,6 +447,25 @@ function setSelectedAddress(type, item, selectedCard = null) {
     }
 
     updateMapBounds();
+}
+
+function setSelectedFavourite(type) {
+    const select = document.getElementById(type === "from" ? "from_favourite" : "to_favourite");
+    const option = select.options[select.selectedIndex];
+
+    if (!option || !option.value) {
+        return;
+    }
+
+    const lat = option.dataset.lat;
+    const lon = option.dataset.lon;
+    const label = option.dataset.label || option.text;
+
+    setSelectedAddress(type, {
+        lat: lat,
+        lon: lon,
+        label: label
+    });
 }
 
 function openResults(type) {
@@ -592,6 +619,14 @@ document.addEventListener("DOMContentLoaded", function () {
             event.preventDefault();
             searchAddress(this.value, "to");
         }
+    });
+
+    document.getElementById("from_favourite").addEventListener("change", function () {
+        setSelectedFavourite("from");
+    });
+
+    document.getElementById("to_favourite").addEventListener("change", function () {
+        setSelectedFavourite("to");
     });
 });
 </script>
