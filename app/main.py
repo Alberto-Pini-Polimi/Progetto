@@ -15,6 +15,8 @@ from flask import (
     url_for,
     session,
     flash,
+    jsonify,
+    send_from_directory,
 )
 
 from DB.database import (
@@ -27,18 +29,18 @@ from DB.database import (
 )
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-me") #TODO : usare una chiave segreta reale in produzione
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-me")
 
 OTP_URL = os.getenv("OTP_URL", "http://localhost:8080/otp/transmodel/v3")
+OUTPUT_DIR = os.path.join(os.getcwd(), "MapOutputFolder")
+MAP_FILENAME = "mappa.html"
+
 
 # =========================
 # OTP helpers
 # =========================
 
 def attendi_otp(url_otp, timeout_minuti=10):
-    """
-    Mette in pausa lo script finché OTP non risponde correttamente.
-    """
     print(f"⏳ Attendo che OpenTripPlanner sia pronto all'indirizzo: {url_otp}")
 
     inizio = time.time()
@@ -60,6 +62,7 @@ def attendi_otp(url_otp, timeout_minuti=10):
 
         time.sleep(10)
 
+
 def input_float(prompt: str) -> float:
     while True:
         s = input(prompt).strip().replace(",", ".")
@@ -68,10 +71,12 @@ def input_float(prompt: str) -> float:
         except ValueError:
             print("Valore non valido, riprova.")
 
+
 def input_coords(label: str) -> dict:
     lat = input_float(f"{label} latitude: ")
     lon = input_float(f"{label} longitude: ")
     return {"coordinates": {"latitude": lat, "longitude": lon}}
+
 
 def now_utc_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
@@ -85,6 +90,7 @@ def hash_password(password: str) -> str:
     password_bytes = password.encode("utf-8")
     hashed = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
     return hashed.decode("utf-8")
+
 
 def verify_password(password: str, stored_hash: str) -> bool:
     try:
@@ -106,19 +112,27 @@ def get_logged_user():
         return None
     return {"id": user_id, "username": username}
 
+
 def build_point_from_form(prefix: str):
     lat = request.form.get(f"{prefix}_lat", "").strip().replace(",", ".")
     lon = request.form.get(f"{prefix}_lon", "").strip().replace(",", ".")
 
     if not lat or not lon:
-        raise ValueError(f"Coordinate mancanti per {prefix}")
+        raise ValueError(f"Seleziona un indirizzo valido per {prefix}")
+
+    try:
+        lat = float(lat)
+        lon = float(lon)
+    except ValueError:
+        raise ValueError(f"Coordinate non valide per {prefix}")
 
     return {
         "coordinates": {
-            "latitude": float(lat),
-            "longitude": float(lon),
+            "latitude": lat,
+            "longitude": lon,
         }
     }
+
 
 def point_from_favourite(fav):
     return {
@@ -128,11 +142,11 @@ def point_from_favourite(fav):
         }
     }
 
+
 def get_default_variables(wheelchair=True):
     return {
         "from": {"coordinates": {"latitude": 45.47437, "longitude": 9.183323}},
         "to": {"coordinates": {"latitude": 45.48535, "longitude": 9.20944}},
-        #"dateTime": now_utc_iso(), #TODO usalo in produzione
         "dateTime": "2026-02-28T16:07:08.511Z",
         "modes": {
             "transportModes": [
@@ -149,6 +163,73 @@ def get_default_variables(wheelchair=True):
         "arriveBy": False,
         "searchWindow": 40,
     }
+
+
+def delete_old_map():
+    file_path = os.path.join(OUTPUT_DIR, MAP_FILENAME)
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+            print(f"🧹 Vecchia mappa rimossa: {file_path}")
+        except Exception as e:
+            print(f"⚠️ Impossibile rimuovere la vecchia mappa: {e}")
+
+
+# =========================
+# API geocoding
+# =========================
+
+@app.route("/api/geocode")
+def api_geocode():
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify([])
+
+    try:
+        response = requests.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={
+                "q": q,
+                "format": "jsonv2",
+                "limit": 5,
+                "addressdetails": 1,
+                "countrycodes": "it",
+            },
+            headers={
+                "User-Agent": "route-app/1.0"
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        results = []
+        for item in data:
+            results.append({
+                "label": item.get("display_name", "Risultato"),
+                "lat": float(item["lat"]),
+                "lon": float(item["lon"]),
+            })
+
+        return jsonify(results)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# =========================
+# Output map
+# =========================
+
+@app.route("/output-map")
+def serve_output_map():
+    file_path = os.path.join(OUTPUT_DIR, MAP_FILENAME)
+
+    if not os.path.exists(file_path):
+        flash("La mappa non è stata ancora generata.", "error")
+        return redirect(url_for("dashboard"))
+
+    return send_from_directory(OUTPUT_DIR, MAP_FILENAME)
 
 
 # =========================
@@ -319,6 +400,9 @@ def dashboard():
                 flash("OTP non è raggiungibile al momento.", "error")
                 return render_template("dashboard.html", user=user, favourites=favourites)
 
+            #pulisco vecchia mappa
+            delete_old_map()
+
             try:
                 OTP_routing = importlib.import_module("OTP_routing")
                 result = OTP_routing.main(variables=variables)
@@ -332,7 +416,12 @@ def dashboard():
                 return render_template("dashboard.html", user=user, favourites=favourites)
 
             conn.close()
-            return render_template("result.html", variables=variables, result=result)
+            return render_template(
+                "result.html",
+                variables=variables,
+                result=result,
+                map_url=url_for("serve_output_map"),
+            )
 
         except ValueError as e:
             conn.close()
@@ -351,19 +440,30 @@ def dashboard():
 @app.route("/debug-route")
 def debug_route():
     variables = get_default_variables(wheelchair=True)
+    variables["dateTime"] = now_utc_iso()
 
     otp_ready = attendi_otp(OTP_URL, timeout_minuti=3)
     if not otp_ready:
         flash("OTP non è raggiungibile al momento.", "error")
         return redirect(url_for("login"))
 
+    #pulisco vecchia mappa
+    delete_old_map()
+
     try:
         OTP_routing = importlib.import_module("OTP_routing")
         result = OTP_routing.main(variables=variables)
-        return render_template("result.html", variables=variables, result=result)
+        return render_template(
+            "result.html",
+            variables=variables,
+            result=result,
+            map_url=url_for("serve_output_map"),
+        )
     except Exception as e:
         flash(f"Errore durante il routing di debug: {e}", "error")
         return redirect(url_for("login"))
 
+
 if __name__ == "__main__":
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     app.run(host="0.0.0.0", port=5000, debug=True)

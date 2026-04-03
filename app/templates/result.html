@@ -1,24 +1,126 @@
 {% extends "base.html" %}
 
-{% block title %}Risultato{% endblock %}
+{% block title %}Risultato percorso{% endblock %}
 
 {% block content %}
 <div class="card">
-    <h1>Percorso calcolato</h1>
-    <p class="muted">La richiesta è stata inviata al motore di routing.</p>
-
-    <div class="result-box">
-        <h2>Variabili inviate</h2>
-        <pre>{{ variables | tojson(indent=2) }}</pre>
+    <div class="result-header">
+        <div>
+            <h1>Mappa percorso</h1>
+            <p class="muted">Anteprima del percorso generato.</p>
+        </div>
+        <div class="result-actions">
+            <a class="secondary-btn" href="{{ url_for('dashboard') }}">Nuova ricerca</a>
+            <a class="secondary-btn" href="{{ map_url }}" target="_blank" rel="noopener">Apri mappa in una nuova scheda</a>
+        </div>
     </div>
 
-    {% if result %}
-    <div class="result-box">
-        <h2>Risposta</h2>
-        <pre>{{ result | tojson(indent=2) }}</pre>
+    <div class="map-shell">
+        <iframe
+            src="{{ map_url }}"
+            title="Mappa del percorso"
+            class="map-frame">
+        </iframe>
     </div>
+
+    {% if variables %}
+    <section class="panel" style="margin-top: 18px;">
+        <h2>Riepilogo</h2>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <span class="summary-label">From</span>
+                <span>
+                    {{ variables["from"]["coordinates"]["latitude"] }},
+                    {{ variables["from"]["coordinates"]["longitude"] }}
+                </span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">To</span>
+                <span>
+                    {{ variables["to"]["coordinates"]["latitude"] }},
+                    {{ variables["to"]["coordinates"]["longitude"] }}
+                </span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">DateTime</span>
+                <span>{{ variables["dateTime"] }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Search window</span>
+                <span>{{ variables["searchWindow"] }}</span>
+            </div>
+        </div>
+    </section>
     {% endif %}
-
-    <a class="secondary-btn" href="{{ url_for('dashboard') }}">Nuova ricerca</a>
 </div>
+
+<style>
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+
+.result-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.secondary-btn {
+    display: inline-block;
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    border: 1px solid #374151;
+    background: #111827;
+    color: #f9fafb;
+}
+
+.secondary-btn:hover {
+    background: #1f2937;
+}
+
+.map-shell {
+    width: 100%;
+    height: 75vh;
+    min-height: 520px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #d1d5db;
+    background: #fff;
+}
+
+.map-frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.summary-item {
+    padding: 12px;
+    border-radius: 10px;
+    background: #111827;
+    border: 1px solid #374151;
+    color: #f9fafb;
+}
+
+.summary-label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #9ca3af;
+}
+
+</style>
 {% endblock %}
