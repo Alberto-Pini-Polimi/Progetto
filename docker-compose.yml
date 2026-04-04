@@ -4,8 +4,7 @@ services:
     container_name: otp-server
     volumes:
       - ./data/OTP_data:/var/opentripplanner
-    #command: ["--build", "--save"] # Per buildare
-    command: ["--load"] # Per caricare
+    command: ["--load"] # Per caricare graph.obj
     ports:
       - "8080:8080"
     environment:
@@ -33,3 +32,14 @@ services:
       - .env
     ports:
       - "5000:5000"
+
+  # Servizio per la BUILD del graph.obj
+  otp-builder:
+    image: opentripplanner/opentripplanner:latest
+    container_name: otp-builder
+    profiles: ["tools"] # <--- !!!
+    volumes:
+      - ./data/OTP_data:/var/opentripplanner
+    command: ["--build", "--save"] # per buildare solo quello
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xmx6g
