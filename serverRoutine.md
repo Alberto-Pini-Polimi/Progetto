@@ -40,8 +40,6 @@ Una volta creato con la build il container parte automaticamente e prende come i
 docker compose up
 ```
 
-Attenzione! per questo comando nel `docker-compose.yalm` NON dev'essere commentata questa linea `command: ["--build", "--save"]`
-
 ### 5. Una volta ogni ora
 
 A partire dall'ora successiva alla build bisogna lanciare hourlyMonitor.py
@@ -53,3 +51,14 @@ python3 app/hourlyMonitor.py
 Questo script usa le informazioni dello scraper estratte idealmente pochi minuti prima e le confronta con la baseline (`daily_accessibility_baseline.json`) per creare `inaccessible_stations_till_last_GTFSzip_file_update.txt`.
 
 Questo file viene poi usato da `ORS_routing.py` per dare avvisi sul fatto che stazioni consigliate non siano più accessibili.
+
+
+# Esecuzione Periodica
+
+Devo eseguire 2 script periodicamente:
+
+* bash script `serverRoutine.sh` ogni 4 ore
+* python script `app/hourlyMonitor.py` ogni ora (dopo l'esecuzione del primo script)
+
+Per fare queste cose è stato creato un ennesimo script bash che gestisce tutto: `main.sh`.
+La logica di loop è molto semplice: Build $\rightarrow$ Aspetta $\rightarrow$ Monitor $\rightarrow$ Aspetta $\rightarrow$ Monitor $\rightarrow$ Aspetta $\rightarrow$ Monitor $\rightarrow$ Aspetta $\rightarrow$ (Loop)

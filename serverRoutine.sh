@@ -42,6 +42,6 @@ echo "✅ Build completata in $duration secondi"
 echo ""
 
 # 5/5 - Istruzioni per avvio manuale
-echo "📌 5/5 - Avvio manuale richiesto"
-echo "👉 Per avviare il servizio OTP, esegui:"
-echo "   docker compose up"
+echo "📌 5/5 - Avvio servizio"
+docker compose up -d
+echo "✅ servizio avviato"
