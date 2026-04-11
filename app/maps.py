@@ -47,6 +47,13 @@ class Map:
             tooltip=tooltip,
             popup=popup
         ).add_to(self.mappa)
+    
+    def aggiungiPercorso(self, percorso, descrizione="Percorso a piedi"):
+
+        self.aggiungiPolyline(
+            coordinate=percorso.coordinate_della_polyline,
+            tooltip=descrizione
+        )
 
     # per aggiungere una pannello in alto a sinistra con i dettagli del percorso
     def aggiungiDettagli(self, durata, distanza, numero_barriere_trovate):

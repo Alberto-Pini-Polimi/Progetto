@@ -154,7 +154,6 @@ def ORS_call_and_draw(patterns):
         print("Nessuna WALK leg trovata.")
         return
 
-    Ultima_Leg=0 #0 per non far aprire il browser, diventa 1 nell'ultima leg WALK
     #le wl sono coppie di coordinate (lat, lon) con i nomi dei posti di partenza e arrivo
     for k, wl in enumerate(walk_legs, 1): 
         a = wl["from"]  # (lat, lon)
@@ -162,17 +161,14 @@ def ORS_call_and_draw(patterns):
 
         print(f"\n[{k}/{len(walk_legs)}] WALK leg: {wl['from_name']} -> {wl['to_name']} | {a} -> {b}")
         if k==len(walk_legs):
-            #Questa è l'ultima leg WALK, apro browser con tutte le leg WALK precedenti
-            Ultima_Leg=1
 
-        # passa (lat, lon) a ORS e disegna
-        ORS_routing.run_with_coordinates(
-            COORDINATE_INIZIO_input=a,
-            COORDINATE_FINE_input=b,
-            #NOME_UTENTE_input="Utente",
-            PROBLEMATICA_UTENTE_input=ORS_routing.ProblemiMobilità.MOTORIA,
-            Ultima_Leg_input=Ultima_Leg
-        )
+            # passa (lat, lon) a ORS e disegna
+            ORS_routing.calculateWalkingLegAndAddResultToMap(
+                coordinateInizio=a,
+                coordinateFine=b,
+                mappaACuiAggiungereLaLegCalcolata= ... devo creare la mappa prima!
+                wheelchair= ... dipende da cosa chiede l'utente 
+            )
 
 #TODO crea una funzione che setta inizio e fine graficamente su mappa
 
