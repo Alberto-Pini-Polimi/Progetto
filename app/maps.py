@@ -7,10 +7,18 @@ class Map:
 
     def __init__(self, center=[45.4642, 9.1900], zoomStart=10):
         self.mappa = folium.Map(
-            location=center, 
-            tiles='CartoDB positron',
-            zoom_start=zoomStart
+            location=center,
+            zoom_start=zoomStart,
+            control_scale=True
         )
+
+        # Aggiungi vari strati per far scegliere l'utente
+        folium.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr='Esri', name='Satellite').add_to(self.mappa)
+        folium.TileLayer('CartoDB dark_matter', name="Modalità Scura").add_to(self.mappa)
+        folium.TileLayer('openstreetmap', name="OSM").add_to(self.mappa)
+        
+        # Aggiunge il selettore in alto a destra
+        folium.LayerControl().add_to(self.mappa)
 
     # tipicamente il segmento da percorrere
     def aggiungiPolyline(self, coordinate, colore="blue", peso=5, opacità=0.7, tratteggio=None, tooltip="Percorso"):

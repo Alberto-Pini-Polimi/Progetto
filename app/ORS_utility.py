@@ -205,6 +205,7 @@ class Percorso():
         self.facilitatori_trovati = []
         self.infrastrutture_trovate = []
 
+        problematica = ""
         if wheelchair:
             problematica = "Motoria"
 
