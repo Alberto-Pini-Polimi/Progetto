@@ -23,17 +23,15 @@ def callToORS(inizio, fine, elementi_da_evitare=None, waypoints=None, preferenza
         print("⚠️ Attenzione: La variabile d'ambiente ORS_API_KEY non è settata!")
         
     # Costruisco il body & headers
-    coordinates = [inizio]
-    
+    coordinates = [[inizio[1], inizio[0]]]
     # Aggiungi waypoints se presenti
     if waypoints and len(waypoints) > 0:
         for wp in waypoints:
             # waypoints sono [lat, lon], converto in [lon, lat] per ORS
             coordinates.append([wp[1], wp[0]])
-    
     # Aggiungi la destinazione
-    coordinates.append(fine)
-    
+    coordinates.append([fine[1], fine[0]])
+
     headers = {
         "Authorization": ORS_API_KEY,
         "Content-Type": "application/json; charset=utf-8",
@@ -43,8 +41,6 @@ def callToORS(inizio, fine, elementi_da_evitare=None, waypoints=None, preferenza
     body = {
         "coordinates": coordinates,
         "instructions": False,
-        "profile": "foot-walking",
-        "format": "geojson",
         "preference": preferenza
     }
     
@@ -112,16 +108,14 @@ def calculateWalkingLegAndAddResultToMap(coordinateInizio, coordinateFine, mappa
 
     # ------------ CALCOLO PERCORSO STANDARD ------------
 
-    print(f"Calcolo percorso STANDARD da {coordinateInizio} a {coordinateFine}...")
+    #print(f"Walk leg: {coordinateInizio} a {coordinateFine}...")
     # quello calcolato è il percorso di default ed anche il più veloce
-    percorso = Percorso(callToORS(coordinateInizio, coordinateFine)[0])
-
+    percorso = Percorso(callToORS(inizio=coordinateInizio, fine=coordinateFine)[0])
 
     # ------------ CARICAMENTO DATI DAL DB ------------
 
     # il percorso STANDARD mi è utile per caricare gli elementi dal DB in modo efficiente
     # non avrebbe senso caricare elementi in memoria che sono da tutt'altra parte del percorso calcolato
-    print("\nCaricamento dati da file JSON...\n")
     elementi_osm_personalizzati_caricati_dal_db = caricaElementiDaJSON(
         directoryDatiORS=base_directory / "data" / "ORS_data", 
         bbox=percorso.bbox, 
@@ -131,13 +125,7 @@ def calculateWalkingLegAndAddResultToMap(coordinateInizio, coordinateFine, mappa
     # ------------ TROVO GLI ELEMENTI VICINI AL PERCORSO ------------
 
     # dagli elementi estratti trovo quelli rientranti nei buffer del percorso separandoli fra barriere, facilitatori ed infrastrutture
-    print(f"\nCercando barriere, facilitatori e infrastrutture lungo il percorso di default")
     barriere, facilitatori, infrastrutture = percorso.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, wheelchair=wheelchair)
-    print(f"Risultato:\n - {len(barriere)} barriere\n - {len(facilitatori)} facilitatori\n - {len(infrastrutture)} infrastrutture\ntrovati sul percorso")
-
-    # una volta trovati tutti gli elementi necessari basta disegnare la mappa
-    
-
 
     # se la mappa non ha alcuna barriera allora ho finito
     if len(barriere) == 0:
@@ -165,7 +153,7 @@ def calculateWalkingLegAndAddResultToMap(coordinateInizio, coordinateFine, mappa
     tutte_barriere_da_evitare = barriere
     for i in range(NUMERO_DI_ITERAZIONI):
         # calcolo il nuovo percorso mettendo 
-        percorso = Percorso(callToORS(coordinateInizio, coordinateFine)[0])
+        percorso = Percorso(callToORS(inizio=coordinateInizio, fine=coordinateFine)[0])
         # dal percorso calcolato trovo tutte le barriere
         barriere, facilitatori, infrastrutture = percorso.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, wheelchair=wheelchair)
         # le nuove barriere trovate le aggiungo per evitarle alla prossima iterazione

@@ -1,12 +1,9 @@
 import os
 import requests
 import ORS_routing
-import json
 
 URL = os.getenv("OTP_URL", "http://localhost:8080/otp/transmodel/v3")
 HEADERS = {"Content-Type": "application/json"}
-
-WHEELCHAIR = True  # metti False se non ti serve
 
 QUERY = """
 query trip(
@@ -53,124 +50,7 @@ query trip(
 }
 """
 
-def format_coordinates(place: dict) -> str: #formatta coordinate
-    lat = place.get("latitude")
-    lon = place.get("longitude")
-    if lat is None or lon is None:
-        return "(?,?)"
-    return f"({lat:.6f},{lon:.6f})"
-
-def get_place_coord(place: dict):
-    """
-    Ritorna (lat, lon) preferendo le coordinate della quay (fermata) se presenti.
-    """
-    if not place:
-        return None
-
-    quay = place.get("quay") or {}
-    lat = quay.get("latitude")
-    lon = quay.get("longitude")
-    if lat is None or lon is None:
-        lat = place.get("latitude")
-        lon = place.get("longitude")
-
-    if lat is None or lon is None:
-        return None
-
-    return (float(lat), float(lon))
-
-def extract_walk_legs_and_print_public_transports(patterns):
-    """
-    Ritorna una lista di dict, uno per ogni leg WALK: (isola le walking legs per darle a ors)
-    e stampa le altre legs (trasporto pubblico)
-    [
-    {"itinerary_idx": 1, "leg_idx": 2, "from_name": "...", "to_name": "...", "from": (lat,lon), "to": (lat,lon)},
-    ...
-    ]
-    """
-    walk_legs = []
-
-    if not patterns:
-        return walk_legs
-
-    p = patterns[0]   # ← solo primo path
-    itinerary_idx = 1
-
-    for leg_idx, leg in enumerate(p.get("legs") or [], 1):
-        fp = leg.get("fromPlace") or {}
-        tp = leg.get("toPlace") or {}
-
-        a = get_place_coord(fp)
-        b = get_place_coord(tp)
-        nome_a = fp.get("name")
-        nome_b = tp.get("name")
-        if not a or not b:
-            print(f"Leg {leg_idx} manca di coordinate valide")
-            exit(-1)
-        
-        mode = (leg.get("mode") or "").upper()
-
-        if mode != "FOOT":
-            #per ogni leg che non è di tipo WALK, stampo solo una linea del mezzo pubblico
-            print(f"\nLeg {leg_idx} non è FOOT: {mode} quindi la stampo ma non la passo a ORS.")
-            #TODO avvia la funzione ORS_routing.aggiungiMezzoPubblico(...)
-            if a and b:
-                line = leg.get("line") or {}
-                code = line.get("publicCode") or ""
-                name = line.get("name") or ""
-                nome_linea = (f"{code} {name}").strip() or "Linea sconosciuta"
-
-                # tipologia mezzo: metro/bus/tram/rail ecc. (usa mode lowercase)
-                tipologia_mezzo = mode.lower()
-
-                ORS_routing.aggiungiMezzoPubblico(
-                    inizio=a,
-                    fine=b,
-                    nome_inizio = nome_a, # aggiungo anche i nomi delle fermate che mi servono dopo
-                    nome_fine = nome_b,
-                    tipologia_mezzo=tipologia_mezzo,
-                    nome_linea=nome_linea
-                )
-            continue
-
-        walk_legs.append({
-            "itinerary_idx": itinerary_idx,
-            "leg_idx": leg_idx,
-            "from_name": fp.get("name") or "?",
-            "to_name": tp.get("name") or "?",
-            "from": a,
-            "to": b,
-        })
-
-    return walk_legs
-
-def ORS_call_and_draw(patterns):
-    """
-    Per ogni leg di tipo WALK del primo pattern,
-    chiama ORS per calcolare il percorso pedonale e disegna.
-    """
-    walk_legs = extract_walk_legs_and_print_public_transports(patterns) #estrae solo dal primo path
-    if not walk_legs:
-        print("Nessuna WALK leg trovata.")
-        return
-
-    #le wl sono coppie di coordinate (lat, lon) con i nomi dei posti di partenza e arrivo
-    for k, wl in enumerate(walk_legs, 1): 
-        a = wl["from"]  # (lat, lon)
-        b = wl["to"]    # (lat, lon)
-
-        print(f"\n[{k}/{len(walk_legs)}] WALK leg: {wl['from_name']} -> {wl['to_name']} | {a} -> {b}")
-        if k==len(walk_legs):
-
-            # passa (lat, lon) a ORS e disegna
-            ORS_routing.calculateWalkingLegAndAddResultToMap(
-                coordinateInizio=a,
-                coordinateFine=b,
-                mappaACuiAggiungereLaLegCalcolata= ... devo creare la mappa prima!
-                wheelchair= ... dipende da cosa chiede l'utente 
-            )
-
-#TODO crea una funzione che setta inizio e fine graficamente su mappa
+# ALTRE FUNZIONI
 
 def sign_up(users: dict) -> str | None:
     username = input("Scegli username: ").strip()
@@ -206,13 +86,6 @@ def set_favorite(users: dict, username: str, from_obj: dict, to_obj: dict) -> No
 
 
 
-def route(variables, mappaDaPopolareCoiRisultati):
-
-
-    # TODO: provare ad incorporare main qua dentro (e poi togliere il main)
-
-
-    return mappaDaPopolareCoiRisultati
 
 
 
@@ -221,83 +94,177 @@ def route(variables, mappaDaPopolareCoiRisultati):
 
 
 
+# HELPER FUNCTIONS PER route()
+
+def format_coordinates(place: dict) -> str: #formatta coordinate
+    lat = place.get("latitude")
+    lon = place.get("longitude")
+    if lat is None or lon is None:
+        return "(?,?)"
+    return f"({lat:.6f},{lon:.6f})"
+
+def get_place_coord(place: dict):
+    """
+    Ritorna (lat, lon) preferendo le coordinate della quay (fermata) se presenti.
+    """
+    if not place:
+        return None
+
+    quay = place.get("quay") or {}
+    lat = quay.get("latitude")
+    lon = quay.get("longitude")
+    if lat is None or lon is None:
+        lat = place.get("latitude")
+        lon = place.get("longitude")
+
+    if lat is None or lon is None:
+        return None
+
+    return (float(lat), float(lon))
+
+def extractLegs(patterns):
+    """
+    Estrae la lista delle legs dal primo tripPattern.
+    Ritorna una lista di dict, ciascuna rappresentante una leg.
+    """
+    if not patterns:
+        return []
+    p = patterns[0]
+    legs = p.get("legs") or []
+    return legs 
 
 
+# FUNZIONE PRINCIPALE!! CHIAMATA DA main.py (server)
 
+def route(variables):
+    """
+    Funzione principale chiamata da main.py per calcolare il percorso completo.
+    Effettua la chiamata a OTP con le variables, ottiene i tripPatterns,
+    ordina per generalizedCost, prende il migliore, estrae le legs,
+    crea e popola la mappa con percorsi pedonali (via ORS) e segmenti di mezzi pubblici,
+    salva la mappa in HTML e ritorna il contenuto HTML.
+    """
 
+    # variabile locale per capire se l'utente è in sedia a rotelle
+    wheelchair = variables["wheelchair"]
 
+    # Effettua la chiamata HTTP a OTP (POST GraphQL) per ottenere gli itinerari
+    richiesta_otp = requests.post(
+        url=URL,  # URL del server OTP
+        json={"query": QUERY, "variables": variables},  # Payload GraphQL con query e variabili
+        headers=HEADERS,  # Headers con Content-Type application/json
+        timeout=60  # Timeout di 60 secondi per la richiesta
+    )
+    richiesta_otp.raise_for_status()  # Solleva eccezione se la risposta ha status code di errore
+    dati_risposta = richiesta_otp.json()  # Parso la risposta JSON
 
-
-
-
-
-
-def main(variables=None):
-
-    
-    #Chiamata HTTP a OTP (POST GraphQL)
-    r = requests.post(URL, json={"query": QUERY, "variables": variables}, headers=HEADERS, timeout=60)
-    r.raise_for_status()
-    data = r.json()
-
-    #gestione errori e stampa risultati
-    if data.get("errors"):
+    # Gestione errori nella risposta GraphQL
+    if dati_risposta.get("errors"):
         print("GraphQL errors:")
-        for e in data["errors"]:
-            print(" -", e.get("message"))
-        return
+        for errore in dati_risposta["errors"]:
+            print(" -", errore.get("message"))
+        return None  # Ritorna None in caso di errori
 
-    patterns = ((data.get("data") or {}).get("trip") or {}).get("tripPatterns") or []
+    # Estrai i tripPatterns dalla risposta
+    patterns = (
+        (dati_risposta.get("data") or {}).get("trip") or {}
+    ).get("tripPatterns") or []
     if not patterns:
         print("Nessun tripPattern trovato.")
-        return
+        return None
 
-    #ordino per generalizedCost (costo generale) e prendo i primi 3
-    patterns = sorted(
+    # Ordina i patterns per generalizedCost (costo generale) e prendi i top 3 per debug
+    patterns_ordinati = sorted(
         patterns,
         key=lambda p: p.get("generalizedCost") if p.get("generalizedCost") is not None else float("inf")
-    )[:3]
+    )[:2] # prendo i due migliori pattern
 
-    #SVARIATE RIGHE SOLTANTO PER STAMPARE. LA LOGICA CONTINUA DOVE DICO CHE MI COLLEGO CON ALBERTO
-    print(f"Top {len(patterns)} itinerari (wheelchair={WHEELCHAIR}):")
-    for idx, p in enumerate(patterns, 1):
-        #INFO GENERALI DEL PATH
-        cost_sec = p.get("generalizedCost")
-        dur_sec = p.get("duration")
+    # SVARIATE RIGHE SOLTANTO PER STAMPARE!!
+    print(f"Top {len(patterns_ordinati)} itinerari (wheelchair={wheelchair}):")
+    for idx, p in enumerate(patterns_ordinati, 1):
+        # cose per il print
+        costo_secondi = p.get("generalizedCost")
+        durata_secondi = p.get("duration")
 
-        cost_min = (cost_sec / 60.0) if isinstance(cost_sec, (int, float)) else None
-        dur_min = int(dur_sec / 60) if isinstance(dur_sec, (int, float)) else None
+        costo_minuti = (costo_secondi / 60.0) if isinstance(costo_secondi, (int, float)) else None
+        durata_minuti = int(durata_secondi / 60) if isinstance(durata_secondi, (int, float)) else None
 
-        cost_str = f"{cost_min:.1f} min" if cost_min is not None else "n/d"
-        dur_str = f"{dur_min} min" if dur_min is not None else "n/d"
+        costo_str = f"{costo_minuti:.1f} min" if costo_minuti is not None else "n/d"
+        durata_str = f"{durata_minuti} min" if durata_minuti is not None else "n/d"
 
         print(f"\n--- Itinerario #{idx} ---")
-        print(f"Generalized cost: {cost_str} | Durata prevista: {dur_str}")
+        print(f"Generalized cost: {costo_str} | Durata prevista: {durata_str}")
 
-        #STAMPO LE INFO SULLE SINGOLE LEGS
+        # STAMPO LE INFO SULLE SINGOLE LEGS
         legs = p.get("legs") or []
         for j, leg in enumerate(legs, 1):
             mode = (leg.get("mode") or "?").upper()
             fp = leg.get("fromPlace") or {}
             tp = leg.get("toPlace") or {}
-            a_name = fp.get("name") or "?"
-            b_name = tp.get("name") or "?"
+            nome_partenza = fp.get("name") or "?"
+            nome_arrivo = tp.get("name") or "?"
 
-            a_coord = format_coordinates(fp)
-            b_coord = format_coordinates(tp)
+            coordinate_partenza = format_coordinates(fp)
+            coordinate_arrivo = format_coordinates(tp)
 
             if mode == "FOOT":
-                print(f" {j}. 🚶 {a_name} {a_coord} → {b_name} {b_coord}")
+                print(f" {j}. 🚶 {nome_partenza} {coordinate_partenza} → {nome_arrivo} {coordinate_arrivo}")
             else:
                 line = leg.get("line") or {}
-                code = line.get("publicCode") or ""
-                name = line.get("name") or ""
-                line_str = (f"{code} {name}").strip() or "Linea sconosciuta"
-                print(f" {j}. {mode} {a_name} {a_coord} → {b_name} {b_coord} ({line_str})")
+                codice_linea = line.get("publicCode") or ""
+                nome_linea = line.get("name") or ""
+                linea_completa = (f"{codice_linea} {nome_linea}").strip() or "Linea sconosciuta"
+                print(f" {j}. {mode} {nome_partenza} {coordinate_partenza} → {nome_arrivo} {coordinate_arrivo} ({linea_completa})")
 
 
-    #DA QUA AVVIENE IL COLLEGAMENTO CON SCRIPT DI ALBERTO
-    #chiamo una funzione a cui passo le coordinate delle legs e i nomi delle linee con salita e discesa.
-    #questa funzione chiama ORS per calcolare la polyline pedonale, poi applica il matching OSM e disegna
-    ORS_call_and_draw(patterns) #TODO dare la possibilita a un utente di scegliere quale itinerario scegliere tra i path di osm
+
+
+    # Creo la mappa vuota da ritornare come risultato
+    mappa = ORS_routing.Map()
+    # a cui ci aggiungerò tutte le legs...
+
+    # Lavoro sul migliore itinerario trovato da OTP
+    miglior_itinerario = patterns_ordinati[0]
+
+    # Estrai le legs dal miglior itinerario
+    legs = extractLegs([miglior_itinerario])
+
+    # Itera ogni leg per popolare la mappa
+    for leg in legs:
+        modalita = (leg.get("mode") or "").upper()  # Modalità di trasporto (FOOT, BUS, ecc.)
+        luogo_partenza = leg.get("fromPlace") or {}
+        luogo_arrivo = leg.get("toPlace") or {}
+
+        coordinate_partenza = get_place_coord(luogo_partenza)  # (lat, lon) di partenza
+        coordinate_arrivo = get_place_coord(luogo_arrivo)  # (lat, lon) di arrivo
+        nome_partenza = luogo_partenza.get("name") or "?"  # Nome del luogo di partenza
+        nome_arrivo = luogo_arrivo.get("name") or "?"  # Nome del luogo di arrivo
+
+        if modalita == "FOOT":
+            # Chiama ORS per calcolare il percorso pedonale e aggiungere dettagli alla mappa
+            mappa = ORS_routing.calculateWalkingLegAndAddResultToMap(
+                coordinateInizio=coordinate_partenza,  # Coordinate di inizio del segmento pedonale
+                coordinateFine=coordinate_arrivo,  # Coordinate di fine del segmento pedonale
+                mappaACuiAggiungereLaLegCalcolata=mappa,  # Oggetto mappa da aggiornare
+                wheelchair=wheelchair  # Flag per considerare accessibilità wheelchair
+            )
+        else:
+            # Aggiungi il segmento del mezzo pubblico alla mappa
+            linea = leg.get("line") or {}
+            codice_linea = linea.get("publicCode") or ""  # Codice della linea (es. M1)
+            nome_linea = linea.get("name") or ""  # Nome della linea
+            nome_linea_completo = (f"{codice_linea} {nome_linea}").strip() or "Linea sconosciuta"  # Nome completo della linea
+            tipologia_mezzo = modalita.lower()  # Tipo di mezzo in minuscolo (bus, metro, ecc.)
+
+            # Chiama il metodo della mappa per aggiungere il mezzo pubblico
+            mappa.aggiungiMezzoPubblico(
+                inizio=coordinate_partenza,  # Coordinate di inizio del segmento del mezzo
+                fine=coordinate_arrivo,  # Coordinate di fine del segmento del mezzo
+                nome_inizio=nome_partenza,  # Nome della fermata di partenza
+                nome_fine=nome_arrivo,  # Nome della fermata di arrivo
+                tipologia_mezzo=tipologia_mezzo,  # Tipo di mezzo (bus, metro, tram, treno)
+                nome_linea=nome_linea_completo  # Nome completo della linea
+            )
+
+    return mappa # ritorna la mappa
 

@@ -1,4 +1,5 @@
 import folium
+from pathlib import Path
 
 base_directory = Path(__file__).resolve().parent.parent
 

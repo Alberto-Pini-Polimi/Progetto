@@ -16,10 +16,9 @@
 
     <div class="map-shell">
         <iframe
-            src="{{ result }}" <!-- non so bene cosa fare qui però dovrei mettrci la stringa di result contenente un html già tutto renderizzato da folium -->
-        </iframe>
             title="Mappa del percorso"
-            class="map-frame">
+            class="map-frame"
+            srcdoc="{{ result }}">
         </iframe>
     </div>
 

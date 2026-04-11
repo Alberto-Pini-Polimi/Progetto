@@ -4,10 +4,9 @@ import time
 import requests
 import sys
 import bcrypt
-import importlib
 from datetime import datetime, timezone
-import maps
 import OTP_routing
+import maps
 
 from flask import (
     Flask,
@@ -412,7 +411,7 @@ def dashboard():
     - eventualmente salva nuovi preferiti
     - aspetta che OTP sia pronto
     - cancella la vecchia mappa
-    - chiama OTP_routing.main(...)
+    - chiama OTP_routing.route(...)
     - mostra result.html con iframe verso la mappa
     """
     user = get_logged_user()
@@ -507,13 +506,9 @@ def dashboard():
 
 
             # PROVO A FARE IL ROUTING
-
-            # prima creo la mappa che sarà il risultato da inviare all'utente
-            resultMap = maps.__init__()
-
             try:
-                # OTP_routing.route() genera la mappa (già con i walking leg di ORS)
-                resultMap = OTP_routing.route(variables=variables, resultMao=resultMap)
+                # questo esegue OTP, divide in legs e aggiunge tutto alla mappa (i legs a piedi vengono calcolati di ORS)
+                resultMap = OTP_routing.route(variables=variables) # resultMap è la mappa risultato 
 
             except ImportError as e:
                 conn.close()
@@ -528,6 +523,7 @@ def dashboard():
 
             # result.html incorpora la mappa vera tramite iframe verso /output-map
             return render_template(
+                "result.html",
                 variables=variables,
                 result=resultMap.getMappaInHTML() # converto la mappa da oggetto a pagina HTML da mettere in un iframe
             )
@@ -560,17 +556,12 @@ def debug_route():
         flash("OTP non è raggiungibile al momento.", "error")
         return redirect(url_for("login"))
 
-    # Anche qui puliamo la vecchia mappa prima di crearne una nuova
-    delete_old_map()
-
     try:
-        OTP_routing = importlib.import_module("OTP_routing")
-        result = OTP_routing.main(variables=variables)
+        resultMap = OTP_routing.route(variables=variables)
         return render_template(
             "result.html",
             variables=variables,
-            result=result,
-            map_url=url_for("serve_output_map"),
+            result=resultMap.getMappaInHTML()
         )
     except Exception as e:
         flash(f"Errore durante il routing di debug: {e}", "error")

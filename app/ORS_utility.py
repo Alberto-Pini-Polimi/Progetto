@@ -242,7 +242,7 @@ def caricaElementiDaJSON(directoryDatiORS, bbox, wheelchair=False):
     elementi = []
     for file_name in os.listdir(directoryDatiORS):
 
-        print(f"Trovato file: {file_name}")
+        #print(f"Trovato file: {file_name}")
 
         if file_name.endswith('.json'):
             file_path = os.path.join(directoryDatiORS, file_name)
@@ -251,7 +251,7 @@ def caricaElementiDaJSON(directoryDatiORS, bbox, wheelchair=False):
 
                 contenuto = file.read()
                 if not contenuto.strip():  # Verifica se il contenuto (dopo aver rimosso spazi bianchi) è vuoto
-                    print("Vuoto, skipppo\n")
+                    #print("Vuoto, skipppo\n")
                     continue  # Passa al file successivo
 
                 # Carico il contenuto del file
@@ -269,7 +269,7 @@ def caricaElementiDaJSON(directoryDatiORS, bbox, wheelchair=False):
                                 aggiunti += 1
 
                     
-                    print(f"{aggiunti} elementi aggiunti!\n")
+                    #print(f"{aggiunti} elementi aggiunti!\n")
 
                 except json.JSONDecodeError:
                     print(f"Errore nel parsing del file JSON: {file_path}")
@@ -281,6 +281,6 @@ def caricaElementiDaJSON(directoryDatiORS, bbox, wheelchair=False):
 
 
     
-    print(f"{len(elementi)} in totale trovati!")
+    #print(f"{len(elementi)} in totale trovati!")
 
     return elementi # Ritorna quindi tutti gli elementi parsati
