@@ -11,13 +11,13 @@
         </div>
         <div class="result-actions">
             <a class="secondary-btn" href="{{ url_for('dashboard') }}">Nuova ricerca</a>
-            <a class="secondary-btn" href="{{ map_url }}" target="_blank" rel="noopener">Apri mappa in una nuova scheda</a>
         </div>
     </div>
 
     <div class="map-shell">
         <iframe
-            src="{{ map_url }}"
+            src="{{ result }}" <!-- non so bene cosa fare qui però dovrei mettrci la stringa di result contenente un html già tutto renderizzato da folium -->
+        </iframe>
             title="Mappa del percorso"
             class="map-frame">
         </iframe>

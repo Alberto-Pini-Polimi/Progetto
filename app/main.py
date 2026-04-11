@@ -6,6 +6,8 @@ import sys
 import bcrypt
 import importlib
 from datetime import datetime, timezone
+import maps
+import OTP_routing
 
 from flask import (
     Flask,
@@ -483,6 +485,7 @@ def dashboard():
                     except sqlite3.IntegrityError:
                         flash("Label TO già esistente tra i preferiti.", "error")
 
+            
             # =========================
             # COMPLETAMENTO PAYLOAD OTP
             # =========================
@@ -502,15 +505,15 @@ def dashboard():
                 flash("OTP non è raggiungibile al momento.", "error")
                 return render_template("dashboard.html", user=user, favourites=favourites)
 
-            # Pulizia della vecchia mappa così la cartella output mantiene solo l'ultima mappa generata
-            delete_old_map()
+
+            # PROVO A FARE IL ROUTING
+
+            # prima creo la mappa che sarà il risultato da inviare all'utente
+            resultMap = maps.__init__()
 
             try:
-                # Import dinamico del modulo di routing.
-                OTP_routing = importlib.import_module("OTP_routing")
-
-                # OTP_routing.main  genera la mappa HTML
-                result = OTP_routing.main(variables=variables)
+                # OTP_routing.route() genera la mappa (già con i walking leg di ORS)
+                resultMap = OTP_routing.route(variables=variables, resultMao=resultMap)
 
             except ImportError as e:
                 conn.close()
@@ -525,10 +528,8 @@ def dashboard():
 
             # result.html incorpora la mappa vera tramite iframe verso /output-map
             return render_template(
-                "result.html",
                 variables=variables,
-                result=result,
-                map_url=url_for("serve_output_map"),
+                result=resultMap.getMappaInHTML() # converto la mappa da oggetto a pagina HTML da mettere in un iframe
             )
 
         except ValueError as e:

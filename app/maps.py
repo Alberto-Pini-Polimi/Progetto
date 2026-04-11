@@ -4,15 +4,12 @@ base_directory = Path(__file__).resolve().parent.parent
 
 class Map:
 
-    def __init__(self, center=None, zoomStart=10):
-        if center:
-            self.mappa = folium.Map(location=center, zoom_start=zoomStart)
-        else:
-            self.mappa = folium.Map(
-                location=[45.4642, 9.1900], # su milano
-                tiles='CartoDB positron',   # usando questa cartina
-                zoom_start=12
-            ) 
+    def __init__(self, center=[45.4642, 9.1900], zoomStart=10):
+        self.mappa = folium.Map(
+            location=center, 
+            tiles='CartoDB positron',
+            zoom_start=zoomStart
+        )
 
     # tipicamente il segmento da percorrere
     def aggiungiPolyline(self, coordinate, colore="blue", peso=5, opacità=0.7, tratteggio=None, tooltip="Percorso"):

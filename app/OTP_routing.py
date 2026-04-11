@@ -199,6 +199,39 @@ def set_favorite(users: dict, username: str, from_obj: dict, to_obj: dict) -> No
 
 
 
+
+
+
+
+
+
+
+def route(variables, mappaDaPopolareCoiRisultati):
+
+
+    # TODO: provare ad incorporare main qua dentro (e poi togliere il main)
+
+
+    return mappaDaPopolareCoiRisultati
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def main(variables=None):
 
     
@@ -268,5 +301,3 @@ def main(variables=None):
     #questa funzione chiama ORS per calcolare la polyline pedonale, poi applica il matching OSM e disegna
     ORS_call_and_draw(patterns) #TODO dare la possibilita a un utente di scegliere quale itinerario scegliere tra i path di osm
 
-if __name__ == "__main__":
-    main()
