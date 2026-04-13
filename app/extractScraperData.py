@@ -87,9 +87,9 @@ class Station:
         for d in self.directions:
             # banchina accessibile dal mezzanino?
             if self.isAccessible(FromTo.MEZZANINO_TO_PLATFORM, d["direction_name"]):
-                print(f"✅ Dal/al mezzanino alla/dalla banchina in direzione {d["direction_name"]}")
+                print(f"✅ Dal/al mezzanino alla/dalla banchina in direzione {d['direction_name']}")
             else:
-                print(f"❌ Dal/al mezzanino alla/dalla banchina in direzione {d["direction_name"]}")
+                print(f"❌ Dal/al mezzanino alla/dalla banchina in direzione {d['direction_name']}")
         
         # si può passare da una banchina all'altra
         print(f"{'✅' if self.isAccessible(FromTo.PLATFORM_TO_PLATFORM) else '❌'} Da banchina a banchina")
