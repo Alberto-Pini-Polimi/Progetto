@@ -181,8 +181,8 @@ class Map:
 
         # prendo la lista di tutte le stazioni che sono diventate inaccessibili dall'ultima 
         # build del graph.obj questa lista deve essere aggiornata periodicamente
+        stationsBecomeUnaccessible = []
         if tipologia_mezzo == "metro":
-            stationsBecomeUnaccessible = []
             try:
                 with open(base_directory / "data" / "OTP_data" / "inaccessible_stations_till_last_GTFSzip_file_update.txt", "r", encoding='utf-8') as recentlyInaccessibleStationsFile:
                     for stazione in recentlyInaccessibleStationsFile:
@@ -226,12 +226,12 @@ class Map:
 
         # finalmente aggiungo i marker 
         self.aggiungiMarker(
-            location=start,
-            icon=_div_label(messaggioSalita, dx_px=10, dy_px=-10)
+            punto=start,
+            icona=_div_label(messaggioSalita, dx_px=10, dy_px=-10)
         )
         self.aggiungiMarker(
-            location=end,
-            icon=_div_label(messaggioDiscesa, dx_px=10, dy_px=-10)
+            punto=end,
+            icona=_div_label(messaggioDiscesa, dx_px=10, dy_px=-10)
         )
 
 
