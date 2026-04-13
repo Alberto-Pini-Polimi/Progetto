@@ -550,7 +550,8 @@ def debug_route():
     """
     variables = get_default_variables(wheelchair=True)
     variables["dateTime"] = now_utc_iso()
-
+    print(variables)
+    
     otp_ready = attendi_otp(OTP_URL, timeout_minuti=3)
     if not otp_ready:
         flash("OTP non è raggiungibile al momento.", "error")
