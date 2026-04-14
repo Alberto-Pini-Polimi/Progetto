@@ -234,6 +234,8 @@ class Map:
             icona=_div_label(messaggioDiscesa, dx_px=10, dy_px=-10)
         )
 
+        return self
+
 
 
     # al posto di salvare la mappa la estraggo in html così da poterla mettere nell'iframe della pagina dei risultati per gli utenti

@@ -180,6 +180,7 @@ def route(variables):
     )[:2] # prendo i due migliori pattern
 
     # SVARIATE RIGHE SOLTANTO PER STAMPARE!!
+    stringaOutput = ""
     print(f"Top {len(patterns_ordinati)} itinerari (wheelchair={wheelchair}):")
     for idx, p in enumerate(patterns_ordinati, 1):
         # cose per il print
@@ -192,8 +193,8 @@ def route(variables):
         costo_str = f"{costo_minuti:.1f} min" if costo_minuti is not None else "n/d"
         durata_str = f"{durata_minuti} min" if durata_minuti is not None else "n/d"
 
-        print(f"\n--- Itinerario #{idx} ---")
-        print(f"Generalized cost: {costo_str} | Durata prevista: {durata_str}")
+        stringaOutput += f"\n--- Itinerario #{idx} ---\n"
+        stringaOutput += f"Generalized cost: {costo_str} | Durata prevista: {durata_str}\n"
 
         # STAMPO LE INFO SULLE SINGOLE LEGS
         legs = p.get("legs") or []
@@ -208,15 +209,15 @@ def route(variables):
             coordinate_arrivo = format_coordinates(tp)
 
             if mode == "FOOT":
-                print(f" {j}. 🚶 {nome_partenza} {coordinate_partenza} → {nome_arrivo} {coordinate_arrivo}")
+                stringaOutput += f"\t{j}. 🚶 {nome_partenza} {coordinate_partenza} --> {nome_arrivo} {coordinate_arrivo}\n"
             else:
                 line = leg.get("line") or {}
                 codice_linea = line.get("publicCode") or ""
                 nome_linea = line.get("name") or ""
                 linea_completa = (f"{codice_linea} {nome_linea}").strip() or "Linea sconosciuta"
-                print(f" {j}. {mode} {nome_partenza} {coordinate_partenza} → {nome_arrivo} {coordinate_arrivo} ({linea_completa})")
+                stringaOutput += f"\t{j}. {mode} {nome_partenza} {coordinate_partenza} --> {nome_arrivo} {coordinate_arrivo} ({linea_completa})\n"
 
-
+    print(stringaOutput) # questa la posso usare dopo per mostrarlo nel risultato
 
 
     # Creo la mappa vuota da ritornare come risultato
@@ -257,7 +258,7 @@ def route(variables):
             tipologia_mezzo = modalita.lower()  # Tipo di mezzo in minuscolo (bus, metro, ecc.)
 
             # Chiama il metodo della mappa per aggiungere il mezzo pubblico
-            mappa.aggiungiMezzoPubblico(
+            mappa = mappa.aggiungiMezzoPubblico(
                 inizio=coordinate_partenza,  # Coordinate di inizio del segmento del mezzo
                 fine=coordinate_arrivo,  # Coordinate di fine del segmento del mezzo
                 nome_inizio=nome_partenza,  # Nome della fermata di partenza
@@ -266,5 +267,5 @@ def route(variables):
                 nome_linea=nome_linea_completo  # Nome completo della linea
             )
 
-    return mappa # ritorna la mappa
+    return mappa, stringaOutput # ritorna la mappa
 

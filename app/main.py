@@ -4,6 +4,7 @@ import time
 import requests
 import sys
 import bcrypt
+import re
 from datetime import datetime, timezone
 import OTP_routing
 import maps
@@ -78,6 +79,59 @@ def now_utc_iso() -> str:
     Esempio: 2026-04-03T10:15:00.123Z
     """
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def format_result_text(text: str) -> str:
+    """
+    Trasforma il testo degli itinerari in HTML strutturato:
+    - Converte "--- Itinerario #N ---" in tag h3
+    - Crea elenchi ordinati <ol> per le legs
+    - Rimuove i numeri duplicati dalle righe
+    """
+    lines = text.split("\n")
+    result = []
+    in_itinerary = False
+    
+    for line in lines:
+        # Titolo itinerario
+        match_title = re.match(r"--- Itinerario #(\d+) ---", line)
+        if match_title:
+            # Chiudi la lista precedente se era aperta
+            if in_itinerary:
+                result.append("</ol>")
+            num = match_title.group(1)
+            result.append(f"<h3>{num}° Itinerario</h3>")
+            in_itinerary = True
+            continue
+        
+        # Info del viaggio (generalized cost, durata)
+        if line.startswith("Generalized cost:"):
+            result.append(f"<p>{line}</p>")
+            result.append("<ol>")
+            continue
+        
+        # Legs (elementi con tab e numero)
+        if line.startswith("\t"):
+            # Rimuovi il tab iniziale, poi rimuovi il numero duplicato (es. "1. ")
+            leg_content = line.lstrip("\t")
+            # Rimuove il pattern "N. " dove N è uno o più cifre
+            leg_content = re.sub(r"^\d+\.\s+", "", leg_content)
+            result.append(f"<li>{leg_content}</li>")
+            continue
+        
+        # Linee vuote
+        if line.strip() == "":
+            continue
+        
+        # Altre linee (se ce ne sono)
+        if line.strip():
+            result.append(f"<p>{line}</p>")
+    
+    # Chiudi l'ultima lista se era aperta
+    if in_itinerary:
+        result.append("</ol>")
+    
+    return "\n".join(result)
 
 
 # =========================
@@ -508,7 +562,7 @@ def dashboard():
             # PROVO A FARE IL ROUTING
             try:
                 # questo esegue OTP, divide in legs e aggiunge tutto alla mappa (i legs a piedi vengono calcolati di ORS)
-                resultMap = OTP_routing.route(variables=variables) # resultMap è la mappa risultato 
+                resultMap, resultText = OTP_routing.route(variables=variables) # resultMap è la mappa risultato 
 
             except ImportError as e:
                 conn.close()
@@ -525,7 +579,8 @@ def dashboard():
             return render_template(
                 "result.html",
                 variables=variables,
-                result=resultMap.getMappaInHTML() # converto la mappa da oggetto a pagina HTML da mettere in un iframe
+                result=resultMap.getMappaInHTML(), # converto la mappa da oggetto a pagina HTML da mettere in un iframe
+                resultHTML=format_result_text(resultText)
             )
 
         except ValueError as e:
@@ -558,11 +613,12 @@ def debug_route():
         return redirect(url_for("login"))
 
     try:
-        resultMap = OTP_routing.route(variables=variables)
+        resultMap, resultText = OTP_routing.route(variables=variables)
         return render_template(
             "result.html",
             variables=variables,
-            result=resultMap.getMappaInHTML()
+            result=resultMap.getMappaInHTML(),
+            resultHTML = format_result_text(resultText)
         )
     except Exception as e:
         flash(f"Errore durante il routing di debug: {e}", "error")
