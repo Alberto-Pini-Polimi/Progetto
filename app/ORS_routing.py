@@ -153,7 +153,7 @@ def calculateWalkingLegAndAddResultToMap(coordinateInizio, coordinateFine, mappa
     tutte_barriere_da_evitare = barriere
     for i in range(NUMERO_DI_ITERAZIONI):
         # calcolo il nuovo percorso mettendo 
-        percorso = Percorso(callToORS(inizio=coordinateInizio, fine=coordinateFine)[0])
+        percorso = Percorso(callToORS(inizio=coordinateInizio, fine=coordinateFine, avoid_polygons=tutte_barriere_da_evitare)[0])
         # dal percorso calcolato trovo tutte le barriere
         barriere, facilitatori, infrastrutture = percorso.trovaElementiSulPercorso(elementi_osm_personalizzati_caricati_dal_db, wheelchair=wheelchair)
         # le nuove barriere trovate le aggiungo per evitarle alla prossima iterazione
@@ -188,3 +188,5 @@ def calculateWalkingLegAndAddResultToMap(coordinateInizio, coordinateFine, mappa
         for barriera in barriere:
             if barriera not in tutte_barriere_da_evitare:
                 tutte_barriere_da_evitare.append(barriera)
+
+    return mappaACuiAggiungereLaLegCalcolata

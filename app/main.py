@@ -88,7 +88,7 @@ def format_result_text(text: str) -> str:
     - Crea elenchi ordinati <ol> per le legs
     - Rimuove i numeri duplicati dalle righe
     """
-    lines = text.split("\n")
+    lines = text.replace("-->", "&#8594;").split("\n") # rimpiazzo --> con la freccia in html e splitto sul new line
     result = []
     in_itinerary = False
     

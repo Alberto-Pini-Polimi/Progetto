@@ -76,24 +76,6 @@ def set_favorite(users: dict, username: str, from_obj: dict, to_obj: dict) -> No
     users[username]["favorite"] = {"from": from_obj, "to": to_obj}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # HELPER FUNCTIONS PER route()
 
 def format_coordinates(place: dict) -> str: #formatta coordinate
@@ -217,7 +199,7 @@ def route(variables):
                 linea_completa = (f"{codice_linea} {nome_linea}").strip() or "Linea sconosciuta"
                 stringaOutput += f"\t{j}. {mode} {nome_partenza} {coordinate_partenza} --> {nome_arrivo} {coordinate_arrivo} ({linea_completa})\n"
 
-    print(stringaOutput) # questa la posso usare dopo per mostrarlo nel risultato
+    print(stringaOutput) # questa la posso usare dopo per mostrarlo in results.html (dopo un parsing che avviene in un'helper function nel main.py)
 
 
     # Creo la mappa vuota da ritornare come risultato
@@ -225,16 +207,17 @@ def route(variables):
     # a cui ci aggiungerò tutte le legs...
 
     # Lavoro sul migliore itinerario trovato da OTP
-    miglior_itinerario = patterns_ordinati[0]
+    miglior_itinerario = patterns_ordinati[0] # poi in realtà si può creare una seconda mappa con il secondo migliore itinerario
 
     # Estrai le legs dal miglior itinerario
     legs = extractLegs([miglior_itinerario])
 
     # Itera ogni leg per popolare la mappa
     for leg in legs:
-        modalita = (leg.get("mode") or "").upper()  # Modalità di trasporto (FOOT, BUS, ecc.)
-        luogo_partenza = leg.get("fromPlace") or {}
-        luogo_arrivo = leg.get("toPlace") or {}
+        
+        modalita = (leg.get('mode') or "").upper()  # Modalità di trasporto (FOOT, BUS, ecc.)
+        luogo_partenza = leg.get('fromPlace') or {}
+        luogo_arrivo = leg.get('toPlace') or {}
 
         coordinate_partenza = get_place_coord(luogo_partenza)  # (lat, lon) di partenza
         coordinate_arrivo = get_place_coord(luogo_arrivo)  # (lat, lon) di arrivo

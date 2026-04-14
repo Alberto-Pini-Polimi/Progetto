@@ -46,7 +46,13 @@ class Map:
     # ideale per indicare un singolo punto come una panchina o una fontanella
     def aggiungiMarker(self, punto, colore="blue", icona=None, tooltip=None, popup=None):
         """Aggiunge un marker alla mappa"""
-        icona_folium = folium.Icon(color=colore, icon=icona if icona else 'info-sign', prefix='glyphicon')
+        # Se 'icona' è una stringa (es. "info-sign") o None, creo un folium.Icon normale.
+        # Se invece è già un oggetto (come un DivIcon o un Icon personalizzato), lo uso direttamente!
+        if type(icona) is str or icona is None:
+            icona_folium = folium.Icon(color=colore, icon=icona if icona else 'info-sign', prefix='glyphicon')
+        else:
+            icona_folium = icona
+
         folium.Marker(
             location=punto,
             icon=icona_folium,
