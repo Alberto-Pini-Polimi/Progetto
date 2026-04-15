@@ -9,13 +9,17 @@ class Map:
         self.mappa = folium.Map(
             location=center,
             zoom_start=zoomStart,
-            control_scale=True
+            control_scale=True,
+            tiles=None # per non caricare la mappa di default 
         )
 
         # Aggiungi vari strati per far scegliere l'utente
-        folium.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr='Esri', name='Satellite').add_to(self.mappa)
-        folium.TileLayer('CartoDB dark_matter', name="Modalità Scura").add_to(self.mappa)
         folium.TileLayer('openstreetmap', name="OSM").add_to(self.mappa)
+        folium.TileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', 
+            attr='Esri', 
+            name='Satellitare'
+        ).add_to(self.mappa)
         
         # Aggiunge il selettore in alto a destra
         folium.LayerControl().add_to(self.mappa)
