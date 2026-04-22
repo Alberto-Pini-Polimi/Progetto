@@ -5,7 +5,7 @@ base_directory = Path(__file__).resolve().parent.parent
 
 class Map:
 
-    def __init__(self, center=[45.4642, 9.1900], zoomStart=10):
+    def __init__(self, center=[45.4642, 9.1900], zoomStart=12.4):
         self.mappa = folium.Map(
             location=center,
             zoom_start=zoomStart,
@@ -13,12 +13,22 @@ class Map:
             tiles=None # per non caricare la mappa di default 
         )
 
-        # Aggiungi vari strati per far scegliere l'utente
-        folium.TileLayer('openstreetmap', name="OSM").add_to(self.mappa)
+        # Aggiungi vari strati per far scegliere l'utente.
+        # OSM resta il default, così all'apertura si vedono subito le vie.
+        folium.TileLayer('openstreetmap', name="OSM", show=True).add_to(self.mappa)
         folium.TileLayer(
-            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', 
-            attr='Esri', 
-            name='Satellitare'
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            attr='Esri',
+            name='Satellitare',
+            show=False #false per vedere bene le vie etichette, true per visione più realistica
+        ).add_to(self.mappa)
+        folium.TileLayer(
+            'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+            attr='Esri',
+            name='Etichette (vie/luoghi)',
+            overlay=True,
+            control=True,
+            show=True
         ).add_to(self.mappa)
         
         # Aggiunge il selettore in alto a destra
